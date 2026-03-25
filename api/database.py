@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
+import bcrypt
 import yaml
-from passlib.context import CryptContext
 from sqlmodel import SQLModel, create_engine, Session, select
 from .models import User, Dog, Activity, Role, Size
 from datetime import datetime
@@ -9,7 +9,6 @@ from datetime import datetime
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/millepattes")
 engine = create_engine(DATABASE_URL)
 SEED_FILE_PATH = Path(os.getenv("SEED_FILE_PATH", Path(__file__).with_name("seed_data.yaml")))
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _load_seed_data() -> dict:
@@ -30,7 +29,11 @@ def _ensure_hashed_password(raw_password: str) -> str:
     # If a bcrypt hash is already provided in YAML, keep it as-is.
     if raw_password.startswith("$2a$") or raw_password.startswith("$2b$") or raw_password.startswith("$2y$"):
         return raw_password
-    return pwd_context.hash(raw_password)
+    return bcrypt.hashpw(raw_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
 def init_db():

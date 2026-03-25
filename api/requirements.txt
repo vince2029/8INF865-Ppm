@@ -3,4 +3,4 @@ uvicorn[standard]
 sqlmodel
 psycopg2-binary
 PyYAML
-passlib[bcrypt]
+bcrypt
