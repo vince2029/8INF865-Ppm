@@ -1,0 +1,25 @@
+users:
+  - email: "alice@email.com"
+    password: "hash_alice"
+    role: "PARTICULIER"
+    points_balance: 150
+  - email: "bob@email.com"
+    password: "hash_bob"
+    role: "PARTICULIER"
+    points_balance: 50
+
+dogs:
+  - name: "Rex"
+    age: 3
+    size: "GRAND"
+    energy_level: 5
+    is_shy: false
+    owner_email: "alice@email.com"
+
+activities:
+  - creator_email: "alice@email.com"
+    title: "Balade Parc"
+    description: "Cool"
+    location_name: "Paris"
+    date_time: "2026-01-01T10:00:00"
+    max_participants: 5
