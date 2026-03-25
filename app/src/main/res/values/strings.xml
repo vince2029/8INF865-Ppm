@@ -1,3 +1,26 @@
 <resources>
     <string name="app_name">MPP</string>
+    <string name="login">Login</string>
+    <string name="home">Home</string>
+    <string name="profile">Profile</string>
+    <string name="chats">Chats</string>
+    <string name="chat_specific">chat %1$s</string>
+    <string name="partners">Partners</string>
+    <string name="new_activity">New Activity</string>
+    <string name="join_activity">Join activity %1$s</string>
+    <string name="activity_list">Activity List</string>
+    <string name="activity_details">Activity details %1$s</string>
+    <string name="notifications">Notifications</string>
+
+    <string name="go_home">Go to home page</string>
+    <string name="go_login">Go to login page</string>
+    <string name="go_profile">Go to profile page</string>
+    <string name="go_chats">Go to chats page</string>
+    <string name="go_chat_specific">Go to chat %1$s</string>
+    <string name="go_partners">Go to partners page</string>
+    <string name="go_new_activity">Go to new activity page</string>
+    <string name="go_join_activity">Go to join activity %1$s</string>
+    <string name="go_activity_list">Go to activity list page</string>
+    <string name="go_activity_details">Go to activity details %1$s</string>
+    <string name="go_notifications">Go to notifications page</string>
 </resources>
