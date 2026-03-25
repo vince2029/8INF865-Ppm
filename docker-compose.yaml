@@ -9,7 +9,7 @@ services:
   app:
     build: ./api
     ports:
-      - "8000:8000"
+      - "8011:8000"
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/millepattes
     depends_on:
