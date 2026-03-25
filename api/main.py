@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from .database import init_db
-from .routes import activities
+from .routes import auth, activities
 
 app = FastAPI(title="Mille Petites Pattes API")
 
@@ -8,7 +8,7 @@ app = FastAPI(title="Mille Petites Pattes API")
 def on_startup():
     init_db()
 
-# C'est ici qu'on ajoute les nouveaux modules de routes
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(activities.router, prefix="/activities", tags=["Activities"])
 
 @app.get("/")
