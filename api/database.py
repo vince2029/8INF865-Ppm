@@ -6,7 +6,18 @@ import yaml
 from sqlmodel import SQLModel, create_engine, Session, select
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from .models import User, Dog, Activity, Role, Size
+from .models import (
+    User,
+    Dog,
+    Activity,
+    Participation,
+    ParticipationRequest,
+    Notification,
+    NotificationType,
+    ParticipationStatus,
+    Role,
+    Size,
+)
 from datetime import datetime
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/millepattes")
@@ -97,6 +108,7 @@ def init_db():
             )
             session.add(dog)
 
+        activity_records = []
         for activity_data in seed_data["activities"]:
             creator = users_by_email.get(activity_data["creator_email"])
             if creator is None:
@@ -116,6 +128,71 @@ def init_db():
                 max_dog_size=Size(activity_data.get("max_dog_size", Size.GRAND.value)),
             )
             session.add(activity)
+            activity_records.append((activity, activity_data))
+
+        session.commit()
+
+        for activity, _ in activity_records:
+            session.refresh(activity)
+
+        for activity, activity_data in activity_records:
+            request_specs = activity_data.get("participant_requests")
+            if request_specs is None:
+                request_specs = [
+                    {"email": email, "status": "PENDING"}
+                    for email in activity_data.get("requested_participants", [])
+                ]
+
+            for request_spec in request_specs:
+                requester_email = request_spec.get("email")
+                status_raw = str(request_spec.get("status", "PENDING")).upper()
+                requester = users_by_email.get(requester_email)
+                if requester is None:
+                    continue
+
+                if requester.id == activity.creator_id:
+                    continue
+
+                try:
+                    request_status = ParticipationStatus(status_raw)
+                except ValueError:
+                    continue
+
+                participation_request = ParticipationRequest(
+                    user_id=requester.id,
+                    activity_id=activity.id,
+                    status=request_status,
+                )
+                session.add(participation_request)
+
+                if request_status == ParticipationStatus.ACCEPTED:
+                    session.add(
+                        Participation(
+                            user_id=requester.id,
+                            activity_id=activity.id,
+                            status=ParticipationStatus.ACCEPTED,
+                        )
+                    )
+
+                if request_status == ParticipationStatus.PENDING:
+                    session.add(
+                        Notification(
+                            user_id=activity.creator_id,
+                            type=NotificationType.REQUEST,
+                            content=f"{requester.pseudo} souhaite rejoindre votre balade : {activity.title}",
+                            related_activity_id=activity.id,
+                        )
+                    )
+                else:
+                    decision_text = "acceptee" if request_status == ParticipationStatus.ACCEPTED else "refusee"
+                    session.add(
+                        Notification(
+                            user_id=requester.id,
+                            type=NotificationType.INFO,
+                            content=f"Votre demande pour la balade '{activity.title}' a ete {decision_text}.",
+                            related_activity_id=activity.id,
+                        )
+                    )
 
         session.commit()
 

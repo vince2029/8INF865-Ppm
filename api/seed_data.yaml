@@ -14,6 +14,21 @@ users:
     password: "hash_julie"
     role: "PARTICULIER"
     points_balance: 200
+  - email: "maxime@email.com"
+    pseudo: "Maxou"
+    password: "hash_maxime"
+    role: "PARTICULIER"
+    points_balance: 120
+  - email: "leo@email.com"
+    pseudo: "LeoRando"
+    password: "hash_leo"
+    role: "PARTICULIER"
+    points_balance: 90
+  - email: "nina@email.com"
+    pseudo: "NinaPattes"
+    password: "hash_nina"
+    role: "PARTICULIER"
+    points_balance: 175
 
 dogs:
   - name: "Rex"
@@ -22,6 +37,36 @@ dogs:
     energy_level: 5
     is_shy: false
     owner_email: "alice@email.com"
+  - name: "Moka"
+    age: 2
+    size: "MOYEN"
+    energy_level: 4
+    is_shy: true
+    owner_email: "bob@email.com"
+  - name: "Pistache"
+    age: 5
+    size: "PETIT"
+    energy_level: 2
+    is_shy: true
+    owner_email: "juliechampi@email.com"
+  - name: "Atlas"
+    age: 4
+    size: "GRAND"
+    energy_level: 3
+    is_shy: false
+    owner_email: "maxime@email.com"
+  - name: "Naya"
+    age: 1
+    size: "MOYEN"
+    energy_level: 5
+    is_shy: false
+    owner_email: "leo@email.com"
+  - name: "Sushi"
+    age: 6
+    size: "PETIT"
+    energy_level: 1
+    is_shy: true
+    owner_email: "nina@email.com"
 
 activities:
   - creator_email: "alice@email.com"
@@ -35,3 +80,74 @@ activities:
     allow_shy_dogs: false
     min_dog_size: "MOYEN"
     max_dog_size: "GRAND"
+    participant_requests:
+      - email: "bob@email.com"
+        status: "PENDING"
+      - email: "leo@email.com"
+        status: "ACCEPTED"
+      - email: "nina@email.com"
+        status: "REJECTED"
+  - creator_email: "bob@email.com"
+    title: "Sortie tranquille au canal"
+    description: "Balade lente pour chiens calmes"
+    location_name: "Lyon"
+    date_time: "2026-09-10T18:30:00"
+    max_participants: 4
+    min_energy_level: 1
+    max_energy_level: 3
+    allow_shy_dogs: true
+    min_dog_size: "PETIT"
+    max_dog_size: "MOYEN"
+    participant_requests:
+      - email: "juliechampi@email.com"
+        status: "PENDING"
+      - email: "nina@email.com"
+        status: "ACCEPTED"
+  - creator_email: "juliechampi@email.com"
+    title: "Run canin matinal"
+    description: "Petit run pour chiens qui ont de l'energie"
+    location_name: "Montreal"
+    date_time: "2026-09-11T07:15:00"
+    max_participants: 6
+    min_energy_level: 4
+    max_energy_level: 5
+    allow_shy_dogs: false
+    min_dog_size: "MOYEN"
+    max_dog_size: "GRAND"
+    participant_requests:
+      - email: "alice@email.com"
+        status: "REJECTED"
+      - email: "maxime@email.com"
+        status: "PENDING"
+  - creator_email: "maxime@email.com"
+    title: "Socialisation chiots"
+    description: "Rencontre securisee pour jeunes chiens"
+    location_name: "Quebec"
+    date_time: "2026-09-12T11:00:00"
+    max_participants: 5
+    min_energy_level: 2
+    max_energy_level: 4
+    allow_shy_dogs: true
+    min_dog_size: "PETIT"
+    max_dog_size: "MOYEN"
+    participant_requests:
+      - email: "bob@email.com"
+        status: "ACCEPTED"
+      - email: "nina@email.com"
+        status: "PENDING"
+  - creator_email: "nina@email.com"
+    title: "Balade de soiree en ville"
+    description: "Petit groupe en centre-ville"
+    location_name: "Paris"
+    date_time: "2026-09-13T20:00:00"
+    max_participants: 5
+    min_energy_level: 2
+    max_energy_level: 5
+    allow_shy_dogs: true
+    min_dog_size: "PETIT"
+    max_dog_size: "GRAND"
+    participant_requests:
+      - email: "alice@email.com"
+        status: "PENDING"
+      - email: "leo@email.com"
+        status: "REJECTED"
