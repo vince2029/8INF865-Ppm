@@ -5,6 +5,12 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: millepattes
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d millepattes"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   app:
     build: ./api
@@ -12,5 +18,9 @@ services:
       - "8011:8000"
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/millepattes
+      DB_MAX_RETRIES: 20
+      DB_RETRY_DELAY_SECONDS: 2
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
