@@ -1,3 +1,4 @@
+from api.core.security import get_current_user_id
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select
 from typing import Optional, List
@@ -11,6 +12,7 @@ router = APIRouter()
 def list_activities(
     *,
     session: Session = Depends(get_session),
+    _: str = Depends(get_current_user_id),
     # --- Filtres de l'activité ---
     location: Optional[str] = Query(None, description="Filtrer par ville ou lieu"),
     min_date: Optional[datetime] = Query(None, description="Date minimale de la balade"),
@@ -24,7 +26,7 @@ def list_activities(
     
     # --- Pagination ---
     offset: int = 0,
-    limit: int = Query(default=20, le=100)
+    limit: int = Query(default=20, le=100),
 ):
     """
     DESCRIPTION: Récupère les activités filtrées selon les caractéristiques du chien de l'utilisateur.
@@ -89,7 +91,7 @@ def list_activities(
 
 
 @router.get("/{activity_id}")
-def get_activity_detail(activity_id: str, session: Session = Depends(get_session)):
+def get_activity_detail(activity_id: str, _: str = Depends(get_current_user_id),session: Session = Depends(get_session)):
     activity = session.get(Activity, activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activité introuvable")

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -64,16 +65,17 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
 
 
 @router.post("/login", response_model=Token)
-def login(user_data: UserCreate, session: Session = Depends(get_session)):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
     """
     Vérifie les identifiants et retourne un Access Token JWT.
+    Utilise OAuth2PasswordRequestForm avec username (email) et password.
     """
-    # 1. Récupérer l'utilisateur
-    statement = select(User).where(User.email == user_data.email)
+    # 1. Récupérer l'utilisateur par username (traité comme email)
+    statement = select(User).where(User.email == form_data.username)
     user = session.exec(statement).first()
     
     # 2. Vérifier l'existence et le mot de passe via bcrypt
-    if not user or not verify_password(user_data.password, user.password):
+    if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect",
