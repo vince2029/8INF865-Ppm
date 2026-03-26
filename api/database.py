@@ -89,6 +89,11 @@ def init_db():
                 location_name=activity_data["location_name"],
                 date_time=datetime.fromisoformat(activity_data["date_time"]),
                 max_participants=activity_data.get("max_participants", 5),
+                min_energy_level=activity_data.get("min_energy_level", 1),
+                max_energy_level=activity_data.get("max_energy_level", 5),
+                allow_shy_dogs=activity_data.get("allow_shy_dogs", True),
+                min_dog_size=Size(activity_data.get("min_dog_size", Size.PETIT.value)),
+                max_dog_size=Size(activity_data.get("max_dog_size", Size.GRAND.value)),
             )
             session.add(activity)
 

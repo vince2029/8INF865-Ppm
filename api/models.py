@@ -41,3 +41,10 @@ class Activity(SQLModel, table=True):
     location_name: str
     date_time: datetime
     max_participants: int = Field(default=5)
+    
+    # Critères de compatibilité des chiens
+    min_energy_level: int = Field(default=1, ge=1, le=5)
+    max_energy_level: int = Field(default=5, ge=1, le=5)
+    allow_shy_dogs: bool = Field(default=True)
+    min_dog_size: Size = Field(default=Size.PETIT)
+    max_dog_size: Size = Field(default=Size.GRAND)
