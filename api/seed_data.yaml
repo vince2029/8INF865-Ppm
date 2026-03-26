@@ -21,5 +21,10 @@ activities:
     title: "Balade Parc"
     description: "Cool"
     location_name: "Paris"
-    date_time: "2026-01-01T10:00:00"
+    date_time: "2026-09-09T10:00:00"
     max_participants: 5
+    min_energy_level: 3
+    max_energy_level: 5
+    allow_shy_dogs: false
+    min_dog_size: "MOYEN"
+    max_dog_size: "GRAND"
