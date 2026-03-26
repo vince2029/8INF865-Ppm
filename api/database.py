@@ -4,7 +4,8 @@ from pathlib import Path
 import bcrypt
 import yaml
 from sqlmodel import SQLModel, create_engine, Session, select
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from .models import User, Dog, Activity, Role, Size
 from datetime import datetime
 
@@ -43,10 +44,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def wait_for_db() -> None:
     for attempt in range(1, DB_MAX_RETRIES + 1):
         try:
-            with Session(engine) as session:
-                session.exec(select(User).limit(1)).first()
+            # Probe only DB connectivity; schema may not exist yet at this stage.
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
             return
-        except OperationalError:
+        except SQLAlchemyError:
             if attempt == DB_MAX_RETRIES:
                 raise
             time.sleep(DB_RETRY_DELAY_SECONDS)
