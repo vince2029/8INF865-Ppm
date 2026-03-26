@@ -13,9 +13,21 @@ class Size(str, Enum):
     MOYEN = "MOYEN"
     GRAND = "GRAND"
 
+
+class ParticipationStatus(str, Enum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+
+class NotificationType(str, Enum):
+    REQUEST = "REQUEST"
+    INFO = "INFO"
+
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     email: str = Field(unique=True, index=True)
+    pseudo: str = Field(unique=True, index=True)
     password: str
     role: Role = Field(default=Role.PARTICULIER)
     points_balance: int = Field(default=0)
@@ -48,3 +60,29 @@ class Activity(SQLModel, table=True):
     allow_shy_dogs: bool = Field(default=True)
     min_dog_size: Size = Field(default=Size.PETIT)
     max_dog_size: Size = Field(default=Size.GRAND)
+
+
+class Participation(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    activity_id: UUID = Field(foreign_key="activity.id", index=True)
+    status: ParticipationStatus = Field(default=ParticipationStatus.PENDING)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ParticipationRequest(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    activity_id: UUID = Field(foreign_key="activity.id", index=True)
+    status: ParticipationStatus = Field(default=ParticipationStatus.PENDING)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Notification(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    type: NotificationType = Field(default=NotificationType.INFO)
+    content: str
+    related_activity_id: Optional[UUID] = Field(default=None, foreign_key="activity.id")
+    is_read: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)

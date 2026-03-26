@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 from uuid import UUID
 
 from ..database import get_session
@@ -15,11 +14,13 @@ router = APIRouter()
 
 class UserCreate(BaseModel):
     email: EmailStr
+    pseudo: str
     password: str
 
 class UserResponse(BaseModel):
     id: UUID
     email: str
+    pseudo: str
     role: str
     points_balance: int
 
@@ -47,11 +48,22 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
             status_code=400, 
             detail="Cet email est déjà enregistré."
         )
+
+    # 1.b Vérifier si le pseudo est déjà pris
+    statement = select(User).where(User.pseudo == user_data.pseudo)
+    existing_user = session.exec(statement).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Ce pseudo est déjà utilisé."
+        )
     
     # 2. Hacher le mot de passe et créer l'entrée
     hashed_pwd = hash_password(user_data.password)
     new_user = User(
         email=user_data.email,
+        pseudo=user_data.pseudo,
         password=hashed_pwd,
         role=Role.PARTICULIER,
         points_balance=0

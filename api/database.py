@@ -69,6 +69,7 @@ def init_db():
         for user_data in seed_data["users"]:
             user = User(
                 email=user_data["email"],
+                pseudo=user_data["pseudo"],
                 password=_ensure_hashed_password(user_data["password"]),
                 role=Role(user_data.get("role", Role.PARTICULIER.value)),
                 points_balance=user_data.get("points_balance", 0),

@@ -3,12 +3,48 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select
 from typing import Optional, List
 from datetime import datetime
+from pydantic import BaseModel
+from uuid import UUID
 from ..database import get_session
-from ..models import Activity, Dog, User, Size
+from ..models import Activity, Size, User
 
 router = APIRouter()
 
-@router.get("/")
+
+class ActivityWithCreatorPseudo(BaseModel):
+    id: UUID
+    creator_id: UUID
+    creator_pseudo: str
+    title: str
+    description: str
+    location_name: str
+    date_time: datetime
+    max_participants: int
+    min_energy_level: int
+    max_energy_level: int
+    allow_shy_dogs: bool
+    min_dog_size: Size
+    max_dog_size: Size
+
+
+def _serialize_activity(activity: Activity, creator_pseudo: str) -> ActivityWithCreatorPseudo:
+    return ActivityWithCreatorPseudo(
+        id=activity.id,
+        creator_id=activity.creator_id,
+        creator_pseudo=creator_pseudo,
+        title=activity.title,
+        description=activity.description,
+        location_name=activity.location_name,
+        date_time=activity.date_time,
+        max_participants=activity.max_participants,
+        min_energy_level=activity.min_energy_level,
+        max_energy_level=activity.max_energy_level,
+        allow_shy_dogs=activity.allow_shy_dogs,
+        min_dog_size=activity.min_dog_size,
+        max_dog_size=activity.max_dog_size,
+    )
+
+@router.get("/", response_model=List[ActivityWithCreatorPseudo])
 def list_activities(
     *,
     session: Session = Depends(get_session),
@@ -47,7 +83,7 @@ def list_activities(
     qui chevauche 3-5 seront retournées.
     """
     
-    statement = select(Activity)
+    statement = select(Activity, User.pseudo).join(User, Activity.creator_id == User.id)
 
     # 1. Filtre Lieu
     if location:
@@ -85,14 +121,22 @@ def list_activities(
             statement = statement.where(Activity.allow_shy_dogs == True)
 
     # Application de la pagination et exécution
-    activities = session.exec(statement.offset(offset).limit(limit)).all()
-    
-    return activities
+    activities_with_creator = session.exec(statement.offset(offset).limit(limit)).all()
+
+    return [
+        _serialize_activity(activity, creator_pseudo)
+        for activity, creator_pseudo in activities_with_creator
+    ]
 
 
-@router.get("/{activity_id}")
+@router.get("/{activity_id}", response_model=ActivityWithCreatorPseudo)
 def get_activity_detail(activity_id: str, _: str = Depends(get_current_user_id),session: Session = Depends(get_session)):
-    activity = session.get(Activity, activity_id)
-    if not activity:
+    activity_with_creator = session.exec(
+        select(Activity, User.pseudo)
+        .join(User, Activity.creator_id == User.id)
+        .where(Activity.id == activity_id)
+    ).first()
+    if not activity_with_creator:
         raise HTTPException(status_code=404, detail="Activité introuvable")
-    return activity
+    activity, creator_pseudo = activity_with_creator
+    return _serialize_activity(activity, creator_pseudo)

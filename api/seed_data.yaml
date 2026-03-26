@@ -1,12 +1,19 @@
 users:
   - email: "alice@email.com"
+    pseudo: "Alice"
     password: "hash_alice"
     role: "PARTICULIER"
     points_balance: 150
   - email: "bob@email.com"
+    pseudo: "Bob"
     password: "hash_bob"
     role: "PARTICULIER"
     points_balance: 50
+  - email : "juliechampi@email.com"
+    pseudo: "JulieChampi"
+    password: "hash_julie"
+    role: "PARTICULIER"
+    points_balance: 200
 
 dogs:
   - name: "Rex"
