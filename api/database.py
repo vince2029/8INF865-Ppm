@@ -1,14 +1,18 @@
 import os
+import time
 from pathlib import Path
 import bcrypt
 import yaml
 from sqlmodel import SQLModel, create_engine, Session, select
+from sqlalchemy.exc import OperationalError
 from .models import User, Dog, Activity, Role, Size
 from datetime import datetime
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/millepattes")
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SEED_FILE_PATH = Path(os.getenv("SEED_FILE_PATH", Path(__file__).with_name("seed_data.yaml")))
+DB_MAX_RETRIES = int(os.getenv("DB_MAX_RETRIES", "15"))
+DB_RETRY_DELAY_SECONDS = float(os.getenv("DB_RETRY_DELAY_SECONDS", "2"))
 
 
 def _load_seed_data() -> dict:
@@ -36,7 +40,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
+def wait_for_db() -> None:
+    for attempt in range(1, DB_MAX_RETRIES + 1):
+        try:
+            with Session(engine) as session:
+                session.exec(select(User).limit(1)).first()
+            return
+        except OperationalError:
+            if attempt == DB_MAX_RETRIES:
+                raise
+            time.sleep(DB_RETRY_DELAY_SECONDS)
+
+
 def init_db():
+    wait_for_db()
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
