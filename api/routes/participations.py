@@ -84,7 +84,7 @@ def join_activity(activity_id: UUID, current_user_id: str = Depends(get_current_
     return {"status": "Demande envoyée"}
 
 
-@router.post("/requests/{request_id}/decision", response_model=ParticipationRequestResponse)
+@router.post("/decide/{request_id}", response_model=ParticipationRequestResponse)
 def decide_participation_request(
     request_id: UUID,
     payload: ParticipationDecisionPayload,

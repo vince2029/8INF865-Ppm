@@ -6,7 +6,16 @@ from datetime import datetime
 from pydantic import BaseModel
 from uuid import UUID
 from ..database import get_session
-from ..models import Activity, Size, User
+from ..models import (
+    Activity,
+    Notification,
+    NotificationType,
+    Participation,
+    ParticipationRequest,
+    ParticipationStatus,
+    Size,
+    User,
+)
 
 router = APIRouter()
 
@@ -27,6 +36,36 @@ class ActivityWithCreatorPseudo(BaseModel):
     max_dog_size: Size
 
 
+class ActivityCreatePayload(BaseModel):
+    title: str
+    description: str
+    location_name: str
+    date_time: datetime
+    max_participants: int = 5
+    min_energy_level: int = 1
+    max_energy_level: int = 5
+    allow_shy_dogs: bool = True
+    min_dog_size: Size = Size.PETIT
+    max_dog_size: Size = Size.GRAND
+
+
+class ActivityUpdatePayload(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    location_name: Optional[str] = None
+    date_time: Optional[datetime] = None
+    max_participants: Optional[int] = None
+    min_energy_level: Optional[int] = None
+    max_energy_level: Optional[int] = None
+    allow_shy_dogs: Optional[bool] = None
+    min_dog_size: Optional[Size] = None
+    max_dog_size: Optional[Size] = None
+
+
+class ActivityActionResponse(BaseModel):
+    status: str
+
+
 def _serialize_activity(activity: Activity, creator_pseudo: str) -> ActivityWithCreatorPseudo:
     return ActivityWithCreatorPseudo(
         id=activity.id,
@@ -44,7 +83,139 @@ def _serialize_activity(activity: Activity, creator_pseudo: str) -> ActivityWith
         max_dog_size=activity.max_dog_size,
     )
 
-@router.get("/", response_model=List[ActivityWithCreatorPseudo])
+
+def _get_accepted_participant_ids(session: Session, activity_id: UUID) -> List[UUID]:
+    return session.exec(
+        select(Participation.user_id).where(
+            Participation.activity_id == activity_id,
+            Participation.status == ParticipationStatus.ACCEPTED,
+        )
+    ).all()
+
+
+@router.post("/", response_model=ActivityWithCreatorPseudo)
+def create_activity(
+    payload: ActivityCreatePayload,
+    current_user_id: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    creator_id = UUID(current_user_id)
+    creator = session.get(User, creator_id)
+    if not creator:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+    activity = Activity(
+        creator_id=creator_id,
+        title=payload.title,
+        description=payload.description,
+        location_name=payload.location_name,
+        date_time=payload.date_time,
+        max_participants=payload.max_participants,
+        min_energy_level=payload.min_energy_level,
+        max_energy_level=payload.max_energy_level,
+        allow_shy_dogs=payload.allow_shy_dogs,
+        min_dog_size=payload.min_dog_size,
+        max_dog_size=payload.max_dog_size,
+    )
+    session.add(activity)
+    session.commit()
+    session.refresh(activity)
+    return _serialize_activity(activity, creator.pseudo)
+
+
+@router.patch("/{activity_id}", response_model=ActivityWithCreatorPseudo)
+def update_activity(
+    activity_id: UUID,
+    payload: ActivityUpdatePayload,
+    current_user_id: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    creator_id = UUID(current_user_id)
+    activity = session.get(Activity, activity_id)
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activité introuvable")
+
+    if activity.creator_id != creator_id:
+        raise HTTPException(status_code=403, detail="Seul le créateur peut modifier cette activité")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field_name, value in update_data.items():
+        setattr(activity, field_name, value)
+
+    session.add(activity)
+
+    creator = session.get(User, creator_id)
+    creator_pseudo = creator.pseudo if creator else "L'organisateur"
+    participant_ids = _get_accepted_participant_ids(session, activity_id)
+    for participant_id in participant_ids:
+        session.add(
+            Notification(
+                user_id=participant_id,
+                type=NotificationType.INFO,
+                content=f"{creator_pseudo} a modifie l'activite '{activity.title}'.",
+                related_activity_id=activity_id,
+            )
+        )
+
+    session.commit()
+    session.refresh(activity)
+    return _serialize_activity(activity, creator_pseudo)
+
+
+@router.delete("/{activity_id}", response_model=ActivityActionResponse)
+def delete_activity(
+    activity_id: UUID,
+    current_user_id: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    creator_id = UUID(current_user_id)
+    activity = session.get(Activity, activity_id)
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activité introuvable")
+
+    if activity.creator_id != creator_id:
+        raise HTTPException(status_code=403, detail="Seul le créateur peut supprimer cette activité")
+
+    creator = session.get(User, creator_id)
+    creator_pseudo = creator.pseudo if creator else "L'organisateur"
+    activity_title = activity.title
+
+    participant_ids = _get_accepted_participant_ids(session, activity_id)
+
+    linked_requests = session.exec(
+        select(ParticipationRequest).where(ParticipationRequest.activity_id == activity_id)
+    ).all()
+    for request in linked_requests:
+        session.delete(request)
+
+    linked_participations = session.exec(
+        select(Participation).where(Participation.activity_id == activity_id)
+    ).all()
+    for participation in linked_participations:
+        session.delete(participation)
+
+    linked_notifications = session.exec(
+        select(Notification).where(Notification.related_activity_id == activity_id)
+    ).all()
+    for notification in linked_notifications:
+        session.delete(notification)
+
+    session.delete(activity)
+
+    for participant_id in participant_ids:
+        session.add(
+            Notification(
+                user_id=participant_id,
+                type=NotificationType.INFO,
+                content=f"{creator_pseudo} a supprime l'activite '{activity_title}'.",
+                related_activity_id=None,
+            )
+        )
+
+    session.commit()
+    return {"status": "Activité supprimée"}
+
+@router.get("/list", response_model=List[ActivityWithCreatorPseudo])
 def list_activities(
     *,
     session: Session = Depends(get_session),

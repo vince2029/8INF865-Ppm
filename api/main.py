@@ -9,9 +9,9 @@ def on_startup():
     init_db()
 
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
-app.include_router(activities.router, prefix="/activities", tags=["Activities"])
-app.include_router(participations.router, prefix="/participations", tags=["Participations"])
-app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+app.include_router(activities.router, prefix="/activity", tags=["Activities"])
+app.include_router(participations.router, prefix="/participation", tags=["Participations"])
+app.include_router(notifications.router, prefix="/notification", tags=["Notifications"])
 
 @app.get("/")
 def read_root():

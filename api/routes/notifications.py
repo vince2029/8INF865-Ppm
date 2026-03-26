@@ -10,7 +10,7 @@ from ..models import Notification
 router = APIRouter()
 
 
-@router.get("/", response_model=list[Notification])
+@router.get("/list", response_model=list[Notification])
 def get_my_notifications(
     current_user_id: str = Depends(get_current_user_id),
     session: Session = Depends(get_session),
