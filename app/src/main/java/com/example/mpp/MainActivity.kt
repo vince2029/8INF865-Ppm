@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.mpp.data.API
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
                 composable<Login> {
                     Login(
                         goToHome = { navController.navigate(Home) },
+                        loginAPI = { username, password -> API.login(username, password) },
                     )
                 }
 
