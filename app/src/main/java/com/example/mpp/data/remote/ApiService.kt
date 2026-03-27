@@ -1,9 +1,11 @@
 package com.example.mpp.data.remote
 
 import com.example.mpp.data.models.activity.ActivityModel
+import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.LoginResponse
 import retrofit2.Response
 import retrofit2.http.Field
+import retrofit2.http.Body
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -20,4 +22,9 @@ interface ApiService {
 
     @GET("activity/list")
     suspend fun getActivities(): Response<List<ActivityModel>>
+
+    @POST("activity/")
+    suspend fun createActivity(
+        @Body request: CreateActivityModel
+    ): Response<ActivityModel>
 }
