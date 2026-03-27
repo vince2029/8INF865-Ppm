@@ -11,6 +11,22 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.mpp.data.API
 import kotlinx.serialization.Serializable
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Serializable
 object Login
@@ -56,6 +72,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val navController = rememberNavController()
+
             val navGraph = navController.createGraph(startDestination = Login) {
                 composable<Login> {
                     Login(
@@ -152,10 +169,71 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
-            NavHost(
+
+            val currentPage = navController.currentBackStackEntryAsState().value?.destination?.route
+
+            Scaffold(
+                bottomBar = {
+                    if (currentPage != Login::class.qualifiedName) {
+                        BottomNavigationBar(navController)
+                    }
+                }
+
+            ) { innerPadding ->
+                NavHost(
                 navController = navController,
-                graph = navGraph
-            )
+                graph = navGraph,
+                modifier = Modifier.padding(innerPadding)
+                )
+            }
+
+
         }
     }
 }
+
+
+@Composable
+fun BottomNavigationBar(navController: NavController) {
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    NavigationBar {
+        NavigationBarItem(
+            selected = currentRoute == Home::class.qualifiedName,
+            onClick = { navController.navigate(Home) },
+            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            label = { Text("Home") }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == Chats::class.qualifiedName,
+            onClick = { navController.navigate(Chats) },
+            icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Chats") },
+            label = { Text("Chats") }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == Partners::class.qualifiedName,
+            onClick = { navController.navigate(Partners) },
+            icon = { Icon(Icons.Default.Group, contentDescription = "Partners") },
+            label = { Text("Partners") }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == ActivityList::class.qualifiedName,
+            onClick = { navController.navigate(ActivityList) },
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Activities") },
+            label = { Text("Activities") }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == Notifications::class.qualifiedName,
+            onClick = { navController.navigate(Notifications) },
+            icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
+            label = { Text("Notifs") }
+        )
+    }
+}
+
+
+

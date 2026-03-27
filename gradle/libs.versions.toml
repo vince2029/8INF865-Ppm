@@ -18,11 +18,11 @@ activity = "1.13.0"
 constraintlayout = "2.2.1"
 material3 = "1.4.0"
 mpandroidchart = "v3.1.0"
-navigationFragmentKtx = "2.9.7"
 retrofit = "3.0.0"
 ui = "1.10.6"
 navigationCompose = "2.9.7"
 foundationLayout = "1.10.6"
+compose-icons = "1.7.8"
 
 
 [libraries]
@@ -43,10 +43,6 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-core-ktx-v160 = { module = "androidx.core:core-ktx", version.ref = "coreVersion" }
 androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
-androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment", version.ref = "navigationFragmentKtx" }
-androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
-androidx-navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "navigationFragmentKtx" }
-androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationFragmentKtx" }
 androidx-ui = { module = "androidx.compose.ui:ui", version.ref = "ui" }
 androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "ui" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "ui" }
@@ -60,6 +56,7 @@ mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+androidx-compose-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "compose-icons" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
