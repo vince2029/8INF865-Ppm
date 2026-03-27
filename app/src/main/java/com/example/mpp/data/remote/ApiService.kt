@@ -18,6 +18,6 @@ interface ApiService {
         @Field("grant_type") grantType: String = "password"
     ): Response<LoginResponse>
 
-    @GET("activities")
-    suspend fun getActivities(): List<ActivityModel>
+    @GET("activity/list")
+    suspend fun getActivities(): Response<List<ActivityModel>>
 }

@@ -13,7 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun Notifications(goToHome: () -> Unit){
+fun Notifications(goToHome: () -> Unit, onSendNotification: () -> Unit){
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -24,6 +24,9 @@ fun Notifications(goToHome: () -> Unit){
         Text(text = stringResource(R.string.notifications))
         Button(onClick = goToHome) {
             Text(text = stringResource(R.string.go_home))
+        }
+        Button(onClick = onSendNotification) {
+            Text("test_notif")
         }
     }
 }
