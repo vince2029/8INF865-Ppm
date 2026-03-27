@@ -1,5 +1,6 @@
 package com.example.mpp
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -49,6 +50,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+
+        NotificationHelper.createChannel(this)
+
         setContent {
             val navController = rememberNavController()
             val navGraph = navController.createGraph(startDestination = Login) {
@@ -75,6 +80,7 @@ class MainActivity : ComponentActivity() {
                         },
                         goToActivityList = { navController.navigate(ActivityList) },
                         goToNotifications = { navController.navigate(Notifications) },
+                        onSendNotification = { NotificationHelper.sendTestNotification(this@MainActivity) }
                     )
                 }
 
