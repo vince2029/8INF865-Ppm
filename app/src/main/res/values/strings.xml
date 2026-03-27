@@ -23,4 +23,6 @@
     <string name="go_activity_list">Go to activity list page</string>
     <string name="go_activity_details">Go to activity details %1$s</string>
     <string name="go_notifications">Go to notifications page</string>
+    <string name="channel_name">chanel name</string>
+    <string name="channel_description">chanel desc</string>
 </resources>

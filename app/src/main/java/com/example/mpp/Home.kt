@@ -21,6 +21,7 @@ fun Home(goToLogin: () -> Unit,
          goToJoinActivity: (String) -> Unit,
          goToActivityList: () -> Unit,
          goToNotifications: () -> Unit,
+         onSendNotification: () -> Unit
     ){
     Column(
         modifier = Modifier
@@ -56,6 +57,9 @@ fun Home(goToLogin: () -> Unit,
         }
         Button(onClick = goToNotifications) {
             Text(text = stringResource(R.string.go_notifications))
+        }
+        Button(onClick = onSendNotification) {
+            Text("test_notif")
         }
     }
 }
