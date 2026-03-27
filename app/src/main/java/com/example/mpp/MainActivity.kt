@@ -4,6 +4,10 @@ import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.navigation.createGraph
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,18 +17,24 @@ import com.example.mpp.data.API
 import kotlinx.serialization.Serializable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
@@ -84,9 +94,6 @@ class MainActivity : ComponentActivity() {
                 composable<Home> {
                     Home(
                         goToLogin = { navController.navigate(Login) },
-                        goToProfile = { navController.navigate(Profile) },
-                        goToChats = { navController.navigate(Chats) },
-                        goToPartners = { navController.navigate(Partners) },
                         goToNewActivity = { navController.navigate(NewActivity) },
                         goToJoinActivity = { activityId ->
                             navController.navigate(
@@ -95,9 +102,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         },
-                        goToActivityList = { navController.navigate(ActivityList) },
-                        goToNotifications = { navController.navigate(Notifications) },
-                        onSendNotification = { NotificationHelper.sendTestNotification(this@MainActivity) }
+
                     )
                 }
 
@@ -166,6 +171,7 @@ class MainActivity : ComponentActivity() {
                 composable<Notifications> {
                     Notifications(
                         goToHome = { navController.navigate(Home) },
+                        onSendNotification = { NotificationHelper.sendTestNotification(this@MainActivity) }
                     )
                 }
             }
@@ -173,6 +179,11 @@ class MainActivity : ComponentActivity() {
             val currentPage = navController.currentBackStackEntryAsState().value?.destination?.route
 
             Scaffold(
+                topBar = {
+                    if (currentPage != Login::class.qualifiedName) {
+                        TopHeaderBar(navController)
+                    }
+                },
                 bottomBar = {
                     if (currentPage != Login::class.qualifiedName) {
                         BottomNavigationBar(navController)
@@ -201,39 +212,61 @@ fun BottomNavigationBar(navController: NavController) {
         NavigationBarItem(
             selected = currentRoute == Home::class.qualifiedName,
             onClick = { navController.navigate(Home) },
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-            label = { Text("Home") }
+            icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.home)) },
+            label = { Text(text = stringResource(R.string.home)) }
         )
 
         NavigationBarItem(
             selected = currentRoute == Chats::class.qualifiedName,
             onClick = { navController.navigate(Chats) },
-            icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Chats") },
-            label = { Text("Chats") }
+            icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = stringResource(R.string.chats)) },
+            label = { Text(text = stringResource(R.string.chats)) }
         )
 
         NavigationBarItem(
             selected = currentRoute == Partners::class.qualifiedName,
             onClick = { navController.navigate(Partners) },
-            icon = { Icon(Icons.Default.Group, contentDescription = "Partners") },
-            label = { Text("Partners") }
+            icon = { Icon(Icons.Default.Group, contentDescription = stringResource(R.string.partners)) },
+            label = { Text(text = stringResource(R.string.partners)) }
         )
 
         NavigationBarItem(
             selected = currentRoute == ActivityList::class.qualifiedName,
             onClick = { navController.navigate(ActivityList) },
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Activities") },
-            label = { Text("Activities") }
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.activity_list)) },
+            label = { Text(text = stringResource(R.string.activity_list)) }
         )
 
         NavigationBarItem(
             selected = currentRoute == Notifications::class.qualifiedName,
             onClick = { navController.navigate(Notifications) },
             icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
-            label = { Text("Notifs") }
+            label = { Text(text = stringResource(R.string.notifs)) }
         )
     }
 }
 
+@Composable
+fun TopHeaderBar(navController: NavController) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(onClick = { navController.popBackStack() }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back"
+            )
+        }
 
+        Text("MILES PETITES PATTES")
+        IconButton(onClick = {navController.navigate(Profile) }) {
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+        }
+    }
+}
 

@@ -1,6 +1,7 @@
 package com.example.mpp.data
 
 
+import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.remote.RetrofitClient
 
 object API {
@@ -21,6 +22,24 @@ object API {
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    suspend fun getActivities(): List<ActivityModel>? {
+        return try {
+            val response = RetrofitClient.service.getActivities()
+
+            println("STATUS: ${response.code()}")
+            println("BODY: ${response.body()}")
+
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }
