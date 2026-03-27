@@ -210,6 +210,20 @@ fun BottomNavigationBar(navController: NavController) {
 
     NavigationBar {
         NavigationBarItem(
+            selected = currentRoute == Notifications::class.qualifiedName,
+            onClick = { navController.navigate(Notifications) },
+            icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
+            label = { Text(text = stringResource(R.string.notifs)) }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == ActivityList::class.qualifiedName,
+            onClick = { navController.navigate(ActivityList) },
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.activity_list)) },
+            label = { Text(text = stringResource(R.string.activity_list)) }
+        )
+
+        NavigationBarItem(
             selected = currentRoute == Home::class.qualifiedName,
             onClick = { navController.navigate(Home) },
             icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.home)) },
@@ -228,20 +242,6 @@ fun BottomNavigationBar(navController: NavController) {
             onClick = { navController.navigate(Partners) },
             icon = { Icon(Icons.Default.Group, contentDescription = stringResource(R.string.partners)) },
             label = { Text(text = stringResource(R.string.partners)) }
-        )
-
-        NavigationBarItem(
-            selected = currentRoute == ActivityList::class.qualifiedName,
-            onClick = { navController.navigate(ActivityList) },
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.activity_list)) },
-            label = { Text(text = stringResource(R.string.activity_list)) }
-        )
-
-        NavigationBarItem(
-            selected = currentRoute == Notifications::class.qualifiedName,
-            onClick = { navController.navigate(Notifications) },
-            icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
-            label = { Text(text = stringResource(R.string.notifs)) }
         )
     }
 }
