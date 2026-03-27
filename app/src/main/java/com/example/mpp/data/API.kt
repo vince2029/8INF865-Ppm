@@ -2,6 +2,7 @@ package com.example.mpp.data
 
 
 import com.example.mpp.data.models.activity.ActivityModel
+import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.remote.RetrofitClient
 
 object API {
@@ -40,6 +41,30 @@ object API {
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        }
+    }
+
+    suspend fun register(email: String, username: String, password: String): Boolean {
+        return try {
+            val response = RetrofitClient.service.register(
+                RegisterRequest(
+                    email = email,
+                    username = username,
+                    password = password
+                )
+            )
+
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                currentUserToken = body.token
+                currentUserId = body.userId
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }
