@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from .database import init_db
-from .routes import auth, activities, participations, notifications
+from .routes import auth, activities, participations, notifications, dogs
 
 app = FastAPI(title="Mille Petites Pattes API")
 

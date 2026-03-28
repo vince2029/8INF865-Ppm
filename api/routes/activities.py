@@ -21,7 +21,7 @@ from ..models import (
 router = APIRouter()
 
 class ParticipantRequestInfo(BaseModel):
-    email: str
+    pseudo: str
     status: str
 
 class ActivityWithCreatorPseudo(BaseModel):
@@ -75,15 +75,9 @@ def _serialize_activity(
     activity: Activity,
     creator_pseudo: str,
     participant_count: int = 0,
+    participant_requests: Optional[List[ParticipantRequestInfo]] = None,
 ) -> ActivityWithCreatorPseudo:
-
-    requests = [
-        ParticipantRequestInfo(
-            email=req.participant_email,
-            status=req.status.value
-        )
-        for req in activity.participant_requests
-    ]
+    requests = participant_requests or []
 
     return ActivityWithCreatorPseudo(
         id=activity.id,
@@ -140,6 +134,44 @@ def _get_accepted_participant_counts(session: Session, activity_ids: List[UUID])
     return {activity_id: int(count) for activity_id, count in rows}
 
 
+def _get_activity_participant_requests(
+    session: Session,
+    activity_id: UUID,
+) -> List[ParticipantRequestInfo]:
+    rows = session.exec(
+        select(User.pseudo, ParticipationRequest.status)
+        .join(User, ParticipationRequest.user_id == User.id)
+        .where(ParticipationRequest.activity_id == activity_id)
+    ).all()
+
+    return [
+        ParticipantRequestInfo(pseudo=pseudo, status=status.value)
+        for pseudo, status in rows
+    ]
+
+
+def _get_activity_participant_requests_map(
+    session: Session,
+    activity_ids: List[UUID],
+) -> dict[UUID, List[ParticipantRequestInfo]]:
+    if not activity_ids:
+        return {}
+
+    rows = session.exec(
+        select(ParticipationRequest.activity_id, User.pseudo, ParticipationRequest.status)
+        .join(User, ParticipationRequest.user_id == User.id)
+        .where(ParticipationRequest.activity_id.in_(activity_ids))
+    ).all()
+
+    requests_map: dict[UUID, List[ParticipantRequestInfo]] = {activity_id: [] for activity_id in activity_ids}
+    for activity_id, pseudo, status in rows:
+        requests_map.setdefault(activity_id, []).append(
+            ParticipantRequestInfo(pseudo=pseudo, status=status.value)
+        )
+
+    return requests_map
+
+
 @router.post("/", response_model=ActivityWithCreatorPseudo)
 def create_activity(
     payload: ActivityCreatePayload,
@@ -167,7 +199,12 @@ def create_activity(
     session.add(activity)
     session.commit()
     session.refresh(activity)
-    return _serialize_activity(activity, creator.pseudo, participant_count=0)
+    return _serialize_activity(
+        activity,
+        creator.pseudo,
+        participant_count=0,
+        participant_requests=[],
+    )
 
 
 @router.patch("/{activity_id}", response_model=ActivityWithCreatorPseudo)
@@ -207,7 +244,13 @@ def update_activity(
     session.commit()
     session.refresh(activity)
     participant_count = _get_accepted_participant_count(session, activity_id)
-    return _serialize_activity(activity, creator_pseudo, participant_count=participant_count)
+    participant_requests = _get_activity_participant_requests(session, activity_id)
+    return _serialize_activity(
+        activity,
+        creator_pseudo,
+        participant_count=participant_count,
+        participant_requests=participant_requests,
+    )
 
 
 @router.delete("/{activity_id}", response_model=ActivityActionResponse)
@@ -343,12 +386,14 @@ def list_activities(
     activities_with_creator = session.exec(statement.offset(offset).limit(limit)).all()
     activity_ids = [activity.id for activity, _ in activities_with_creator]
     participant_counts = _get_accepted_participant_counts(session, activity_ids)
+    participant_requests_map = _get_activity_participant_requests_map(session, activity_ids)
 
     return [
         _serialize_activity(
             activity,
             creator_pseudo,
             participant_count=participant_counts.get(activity.id, 0),
+            participant_requests=participant_requests_map.get(activity.id, []),
         )
         for activity, creator_pseudo in activities_with_creator
     ]
@@ -365,4 +410,10 @@ def get_activity_detail(activity_id: str, _: str = Depends(get_current_user_id),
         raise HTTPException(status_code=404, detail="Activité introuvable")
     activity, creator_pseudo = activity_with_creator
     participant_count = _get_accepted_participant_count(session, activity.id)
-    return _serialize_activity(activity, creator_pseudo, participant_count=participant_count)
+    participant_requests = _get_activity_participant_requests(session, activity.id)
+    return _serialize_activity(
+        activity,
+        creator_pseudo,
+        participant_count=participant_count,
+        participant_requests=participant_requests,
+    )
