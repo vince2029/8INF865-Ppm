@@ -104,4 +104,9 @@ object API {
             false
         }
     }
+
+    fun logout() {
+        currentUserToken = null
+        currentUserId = null
+    }
 }
