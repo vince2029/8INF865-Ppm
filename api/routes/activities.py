@@ -1,6 +1,7 @@
 from api.core.security import get_current_user_id
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select
+from sqlalchemy import func
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel
@@ -34,6 +35,7 @@ class ActivityWithCreatorPseudo(BaseModel):
     allow_shy_dogs: bool
     min_dog_size: Size
     max_dog_size: Size
+    participant_count: int
 
 
 class ActivityCreatePayload(BaseModel):
@@ -66,7 +68,11 @@ class ActivityActionResponse(BaseModel):
     status: str
 
 
-def _serialize_activity(activity: Activity, creator_pseudo: str) -> ActivityWithCreatorPseudo:
+def _serialize_activity(
+    activity: Activity,
+    creator_pseudo: str,
+    participant_count: int = 0,
+) -> ActivityWithCreatorPseudo:
     return ActivityWithCreatorPseudo(
         id=activity.id,
         creator_id=activity.creator_id,
@@ -81,6 +87,7 @@ def _serialize_activity(activity: Activity, creator_pseudo: str) -> ActivityWith
         allow_shy_dogs=activity.allow_shy_dogs,
         min_dog_size=activity.min_dog_size,
         max_dog_size=activity.max_dog_size,
+        participant_count=participant_count,
     )
 
 
@@ -91,6 +98,32 @@ def _get_accepted_participant_ids(session: Session, activity_id: UUID) -> List[U
             Participation.status == ParticipationStatus.ACCEPTED,
         )
     ).all()
+
+
+def _get_accepted_participant_count(session: Session, activity_id: UUID) -> int:
+    count = session.exec(
+        select(func.count(Participation.id)).where(
+            Participation.activity_id == activity_id,
+            Participation.status == ParticipationStatus.ACCEPTED,
+        )
+    ).one()
+    return int(count or 0)
+
+
+def _get_accepted_participant_counts(session: Session, activity_ids: List[UUID]) -> dict[UUID, int]:
+    if not activity_ids:
+        return {}
+
+    rows = session.exec(
+        select(Participation.activity_id, func.count(Participation.id))
+        .where(
+            Participation.activity_id.in_(activity_ids),
+            Participation.status == ParticipationStatus.ACCEPTED,
+        )
+        .group_by(Participation.activity_id)
+    ).all()
+
+    return {activity_id: int(count) for activity_id, count in rows}
 
 
 @router.post("/", response_model=ActivityWithCreatorPseudo)
@@ -120,7 +153,7 @@ def create_activity(
     session.add(activity)
     session.commit()
     session.refresh(activity)
-    return _serialize_activity(activity, creator.pseudo)
+    return _serialize_activity(activity, creator.pseudo, participant_count=0)
 
 
 @router.patch("/{activity_id}", response_model=ActivityWithCreatorPseudo)
@@ -159,7 +192,8 @@ def update_activity(
 
     session.commit()
     session.refresh(activity)
-    return _serialize_activity(activity, creator_pseudo)
+    participant_count = _get_accepted_participant_count(session, activity_id)
+    return _serialize_activity(activity, creator_pseudo, participant_count=participant_count)
 
 
 @router.delete("/{activity_id}", response_model=ActivityActionResponse)
@@ -293,9 +327,15 @@ def list_activities(
 
     # Application de la pagination et exécution
     activities_with_creator = session.exec(statement.offset(offset).limit(limit)).all()
+    activity_ids = [activity.id for activity, _ in activities_with_creator]
+    participant_counts = _get_accepted_participant_counts(session, activity_ids)
 
     return [
-        _serialize_activity(activity, creator_pseudo)
+        _serialize_activity(
+            activity,
+            creator_pseudo,
+            participant_count=participant_counts.get(activity.id, 0),
+        )
         for activity, creator_pseudo in activities_with_creator
     ]
 
@@ -310,4 +350,5 @@ def get_activity_detail(activity_id: str, _: str = Depends(get_current_user_id),
     if not activity_with_creator:
         raise HTTPException(status_code=404, detail="Activité introuvable")
     activity, creator_pseudo = activity_with_creator
-    return _serialize_activity(activity, creator_pseudo)
+    participant_count = _get_accepted_participant_count(session, activity.id)
+    return _serialize_activity(activity, creator_pseudo, participant_count=participant_count)
