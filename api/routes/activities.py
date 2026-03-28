@@ -236,9 +236,10 @@ def update_activity(
         session.add(
             Notification(
                 user_id=participant_id,
-                type=NotificationType.INFO,
-                content=f"{creator_pseudo} a modifie l'activite '{activity.title}'.",
+                type=NotificationType.OTHER,
+                sender_pseudo=creator_pseudo,
                 related_activity_id=activity_id,
+                related_activity_name=activity.title,
             )
         )
 
@@ -298,8 +299,9 @@ def delete_activity(
         session.add(
             Notification(
                 user_id=participant_id,
-                type=NotificationType.INFO,
-                content=f"{creator_pseudo} a supprime l'activite '{activity_title}'.",
+                type=NotificationType.OTHER,
+                sender_pseudo=creator_pseudo,
+                related_activity_name=activity_title,
                 related_activity_id=None,
             )
         )

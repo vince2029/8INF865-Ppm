@@ -80,10 +80,25 @@ def join_activity(activity_id: UUID, current_user_id: str = Depends(get_current_
     notification = Notification(
         user_id=activity.creator_id,
         type=NotificationType.REQUEST,
-        content=f"{requester.pseudo} souhaite rejoindre votre balade : {activity.title}",
+        sender_pseudo=requester.pseudo,
+        receiver_pseudo=activity_creator.pseudo if (activity_creator := session.get(User, activity.creator_id)) else None,
         related_activity_id=activity_id,
+        related_activity_name=activity.title,
+        related_request_id=new_participation_request.id,
     )
     session.add(notification)
+
+    # 4. Creer une notification de suivi pour le demandeur
+    requester_notification = Notification(
+        user_id=user_id,
+        type=NotificationType.PARTICIPATION_PENDING,
+        sender_pseudo=requester.pseudo,
+        receiver_pseudo=activity_creator.pseudo if activity_creator else None,
+        related_activity_id=activity_id,
+        related_activity_name=activity.title,
+        related_request_id=new_participation_request.id,
+    )
+    session.add(requester_notification)
 
     session.commit()
     return {"status": "Demande envoyée"}
@@ -131,9 +146,11 @@ def decide_participation_request(
 
         request.status = ParticipationStatus.ACCEPTED
         decision_text = "acceptee"
+        notification_type = NotificationType.PARTICIPATION_ACCEPTED
     else:
         request.status = ParticipationStatus.REJECTED
         decision_text = "refusee"
+        notification_type = NotificationType.PARTICIPATION_REJECTED
 
     creator = session.get(User, creator_id)
     creator_pseudo = creator.pseudo if creator else "L'organisateur"
@@ -141,9 +158,12 @@ def decide_participation_request(
     session.add(
         Notification(
             user_id=request.user_id,
-            type=NotificationType.INFO,
-            content=f"{creator_pseudo} a {decision_text} votre demande pour la balade '{activity.title}'.",
+            type=notification_type,
+            sender_pseudo=creator_pseudo,
+            receiver_pseudo=requester.pseudo if (requester := session.get(User, request.user_id)) else None,
             related_activity_id=request.activity_id,
+            related_activity_name=activity.title,
+            related_request_id=request.id,
         )
     )
 
@@ -184,9 +204,11 @@ def leave_activity(
     # 4. Notifier l'organisateur
     notification = Notification(
         user_id=activity.creator_id,
-        type=NotificationType.INFO,
-        content=f"{requester.pseudo} a quitte votre balade : {activity.title}",
+        type=NotificationType.OTHER,
+        sender_pseudo=requester.pseudo,
+        receiver_pseudo=activity_creator.pseudo if (activity_creator := session.get(User, activity.creator_id)) else None,
         related_activity_id=activity_id,
+        related_activity_name=activity.title,
     )
     session.add(notification)
 

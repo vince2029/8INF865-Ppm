@@ -65,9 +65,20 @@ def wait_for_db() -> None:
             time.sleep(DB_RETRY_DELAY_SECONDS)
 
 
+def _migrate_notification_table() -> None:
+    """Apply lightweight compatibility migration for existing notification tables."""
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS sender_pseudo VARCHAR"))
+        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS receiver_pseudo VARCHAR"))
+        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS related_activity_name VARCHAR"))
+        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS related_request_id UUID"))
+        connection.execute(text("ALTER TABLE notification ALTER COLUMN IF EXISTS content DROP NOT NULL"))
+
+
 def init_db():
     wait_for_db()
     SQLModel.metadata.create_all(engine)
+    _migrate_notification_table()
 
     with Session(engine) as session:
         # Vérifie si on a déjà des données pour éviter les doublons
@@ -179,18 +190,36 @@ def init_db():
                         Notification(
                             user_id=activity.creator_id,
                             type=NotificationType.REQUEST,
-                            content=f"{requester.pseudo} souhaite rejoindre votre balade : {activity.title}",
+                            sender_pseudo=requester.pseudo,
                             related_activity_id=activity.id,
+                            related_activity_name=activity.title,
+                            related_request_id=participation_request.id,
                         )
                     )
-                else:
-                    decision_text = "acceptee" if request_status == ParticipationStatus.ACCEPTED else "refusee"
                     session.add(
                         Notification(
                             user_id=requester.id,
-                            type=NotificationType.INFO,
-                            content=f"Votre demande pour la balade '{activity.title}' a ete {decision_text}.",
+                            type=NotificationType.PARTICIPATION_PENDING,
+                            sender_pseudo=requester.pseudo,
                             related_activity_id=activity.id,
+                            related_activity_name=activity.title,
+                            related_request_id=participation_request.id,
+                        )
+                    )
+                else:
+                    notification_type = (
+                        NotificationType.PARTICIPATION_ACCEPTED
+                        if request_status == ParticipationStatus.ACCEPTED
+                        else NotificationType.PARTICIPATION_REJECTED
+                    )
+                    session.add(
+                        Notification(
+                            user_id=requester.id,
+                            type=notification_type,
+                            sender_pseudo="L'organisateur",
+                            related_activity_id=activity.id,
+                            related_activity_name=activity.title,
+                            related_request_id=participation_request.id,
                         )
                     )
 
