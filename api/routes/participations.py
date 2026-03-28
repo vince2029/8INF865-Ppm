@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, List
 
 from ..core.security import get_current_user_id
 from ..database import get_session
@@ -25,6 +25,11 @@ class ParticipationRequestResponse(BaseModel):
 
 class ParticipationDecisionPayload(BaseModel):
     decision: Literal["ACCEPTED", "REJECTED"]
+
+
+class ActivityParticipant(BaseModel):
+    id: UUID
+    pseudo: str
 
 
 @router.post("/join/{activity_id}", response_model=ParticipationRequestResponse)
@@ -187,3 +192,25 @@ def leave_activity(
 
     session.commit()
     return {"status": "Participation retiree"}
+
+
+@router.get("/{activity_id}/participants", response_model=List[ActivityParticipant])
+def list_activity_participants(
+    activity_id: UUID,
+    _: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    activity = session.get(Activity, activity_id)
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activite non trouvee")
+
+    participants = session.exec(
+        select(User.id, User.pseudo)
+        .join(Participation, Participation.user_id == User.id)
+        .where(
+            Participation.activity_id == activity_id,
+            Participation.status == ParticipationStatus.ACCEPTED,
+        )
+    ).all()
+
+    return [ActivityParticipant(id=user_id, pseudo=pseudo) for user_id, pseudo in participants]
