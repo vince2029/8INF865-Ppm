@@ -106,7 +106,6 @@ class MainActivity : ComponentActivity() {
 
                 composable<Home> {
                     Home(
-                        goToLogin = { navController.navigate(Login) },
                         goToNewActivity = { navController.navigate(NewActivity) },
                         goToJoinActivity = { activityId ->
                             navController.navigate(

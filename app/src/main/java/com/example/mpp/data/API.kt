@@ -4,6 +4,7 @@ package com.example.mpp.data
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
+import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import com.example.mpp.data.models.participations.ParticipationRequestResponse
 import com.example.mpp.data.remote.RetrofitClient
@@ -134,6 +135,24 @@ object API {
     suspend fun getParticipants(activityId: String): List<ParticipantModel>? {
         return try {
             val response = RetrofitClient.service.getParticipants(activityId)
+
+            println("STATUS: ${response.code()}")
+            println("BODY: ${response.body()}")
+
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun getDog(ownerId: String): DogModel? {
+        return try {
+            val response = RetrofitClient.service.getDog(ownerId)
 
             println("STATUS: ${response.code()}")
             println("BODY: ${response.body()}")

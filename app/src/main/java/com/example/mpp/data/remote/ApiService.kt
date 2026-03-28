@@ -4,6 +4,7 @@ import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.LoginResponse
 import com.example.mpp.data.models.auth.RegisterRequest
+import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import com.example.mpp.data.models.participations.ParticipationRequestResponse
 import retrofit2.Response
@@ -51,5 +52,10 @@ interface ApiService {
     suspend fun getParticipants(
         @Path("activity_id") activityId: String
     ): Response<List<ParticipantModel>>
+
+    @GET("dog/{owner_id}")
+    suspend fun getDog(
+        @Path("owner_id") ownerId: String
+    ): Response<DogModel>
 
 }
