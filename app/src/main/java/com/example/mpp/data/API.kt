@@ -4,7 +4,10 @@ package com.example.mpp.data
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
+import com.example.mpp.data.models.participations.ParticipantModel
+import com.example.mpp.data.models.participations.ParticipationRequestResponse
 import com.example.mpp.data.remote.RetrofitClient
+import retrofit2.Response
 
 object API {
     var currentUserToken: String? = null
@@ -30,6 +33,24 @@ object API {
     suspend fun getActivities(): List<ActivityModel>? {
         return try {
             val response = RetrofitClient.service.getActivities()
+
+            println("STATUS: ${response.code()}")
+            println("BODY: ${response.body()}")
+
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun getActivity(activityId: String): ActivityModel? {
+        return try {
+            val response = RetrofitClient.service.getActivity(activityId)
 
             println("STATUS: ${response.code()}")
             println("BODY: ${response.body()}")
@@ -104,6 +125,30 @@ object API {
             false
         }
     }
+
+    suspend fun joinActivity(activityId: String): Response<ParticipationRequestResponse> {
+        return RetrofitClient.service.postJoinActivity(activityId)
+    }
+
+
+    suspend fun getParticipants(activityId: String): List<ParticipantModel>? {
+        return try {
+            val response = RetrofitClient.service.getParticipants(activityId)
+
+            println("STATUS: ${response.code()}")
+            println("BODY: ${response.body()}")
+
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
 
     fun logout() {
         currentUserToken = null

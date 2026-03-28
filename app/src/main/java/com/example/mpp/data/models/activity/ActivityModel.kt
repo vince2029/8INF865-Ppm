@@ -17,8 +17,8 @@ data class ActivityModel(
     @SerializedName("creator_id")
     val creatorId: String,
 
-    @SerializedName("creator_email")
-    val creatorEmail: String,
+    @SerializedName("creator_pseudo")
+    val creatorPseudo: String,
 
     @SerializedName("title")
     val title: String,
@@ -50,6 +50,6 @@ data class ActivityModel(
     @SerializedName("max_dog_size")
     val maxDogSize: String,
 
-    @SerializedName("participant_requests")
-    val participantRequests: List<ParticipantRequest>
+    @SerializedName("participant_count")
+    val participantCount: Int,
 )
