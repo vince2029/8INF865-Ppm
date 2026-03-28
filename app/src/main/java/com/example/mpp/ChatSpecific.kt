@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -34,3 +35,12 @@ fun ChatsSpecific(goToHome: () -> Unit,
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun ChatsSpecificPreview() {
+    ChatsSpecific(
+        goToHome = {},
+        goToChats = {},
+        chatId = "123"
+    )
+}

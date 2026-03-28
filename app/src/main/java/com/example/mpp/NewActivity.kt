@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 import kotlinx.coroutines.launch
@@ -312,4 +313,13 @@ fun NewActivity(
             TextButton(onClick = goToActivityList) { Text("Voir les activités") }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NewActivityPreview() {
+    NewActivity(
+        goToHome = {},
+        goToActivityList = {}
+    )
 }

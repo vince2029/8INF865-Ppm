@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.ui.tooling.preview.Preview
 
 @Serializable
 object Register
@@ -283,3 +284,16 @@ fun TopHeaderBar(navController: NavController) {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun BottomNavigationBarPreview() {
+    val navController = rememberNavController()
+    BottomNavigationBar(navController = navController)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TopHeaderBarPreview() {
+    val navController = rememberNavController()
+    TopHeaderBar(navController = navController)
+}

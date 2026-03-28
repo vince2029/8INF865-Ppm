@@ -25,9 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import kotlin.math.log
 
 
 @Composable
@@ -119,7 +119,7 @@ fun Login(goToHome: () -> Unit, loginAPI: suspend (String, String) -> Boolean, g
                             error = "Identifiants invalides"
                         }
                     } catch (e: Exception) {
-                        error = "Erreur réseau"
+                        error = "Erreur réseau" + e.message
                     }
                     isLoading = false
                 }
@@ -155,4 +155,14 @@ fun Login(goToHome: () -> Unit, loginAPI: suspend (String, String) -> Boolean, g
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginPreview() {
+    Login(
+        goToHome = {},
+        loginAPI = { _, _ -> true },
+        goToRegister = {}
+    )
 }

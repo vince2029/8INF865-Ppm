@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
@@ -94,4 +95,38 @@ fun ActivityCard(activity: ActivityModel, goToJoinActivity: (String) -> Unit,) {
             Text(text = stringResource(R.string.go_join_activity, activity.activityId))
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomePreview() {
+    Home(
+        goToLogin = {},
+        goToNewActivity = {},
+        goToJoinActivity = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ActivityCardPreview() {
+    ActivityCard(
+        activity = ActivityModel(
+            activityId = "1",
+            creatorId = "user1",
+            creatorEmail = "test@example.com",
+            title = "Balade au parc",
+            description = "Une super balade avec les chiens",
+            locationName = "Parc Central",
+            dateTime = "2023-10-27 14:00",
+            maxParticipants = 5,
+            minEnergyLevel = 1,
+            maxEnergyLevel = 5,
+            allowShyDogs = true,
+            minDogSize = "Petit",
+            maxDogSize = "Grand",
+            participantRequests = emptyList()
+        ),
+        goToJoinActivity = {}
+    )
 }

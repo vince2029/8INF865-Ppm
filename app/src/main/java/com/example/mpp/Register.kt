@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -138,7 +139,7 @@ fun Register(
                             error = "Échec de l'inscription (email déjà utilisé ?)"
                         }
                     } catch (e: Exception) {
-                        error = "Erreur réseau"
+                        error = "Erreur réseau" + e.message
                     }
                     isLoading = false
                 }
@@ -172,3 +173,13 @@ fun Register(
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun RegisterPreview() {
+    Register(
+        goToHome = {},
+        goToLogin = {},
+        registerAPI = { _, _, _ -> true },
+        loginAPI = { _, _ -> true }
+    )
+}
