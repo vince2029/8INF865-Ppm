@@ -157,10 +157,8 @@ class MainActivity : ComponentActivity() {
 
                 composable<JoinActivity> { backStackEntry ->
                     val activityArgs = backStackEntry.toRoute<JoinActivity>()
-                    JoinActivity(
+                    JoinActivityScreen(
                         activityId = activityArgs.Id,
-                        goToHome = { navController.navigate(Home) },
-                        goToActivityList = { navController.navigate(ActivityList) },
                     )
                 }
 

@@ -55,11 +55,6 @@ fun Home(goToLogin: () -> Unit,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            Text(text = stringResource(R.string.home))
-            Button(onClick = goToLogin) {
-                Text(text = stringResource(R.string.go_login))
-            }
-
             var activities by remember { mutableStateOf<List<ActivityModel>>(emptyList()) }
 
             LaunchedEffect(Unit) {
@@ -114,7 +109,7 @@ fun ActivityCardPreview() {
         activity = ActivityModel(
             activityId = "1",
             creatorId = "user1",
-            creatorEmail = "test@example.com",
+            creatorPseudo = "bob",
             title = "Balade au parc",
             description = "Une super balade avec les chiens",
             locationName = "Parc Central",
@@ -125,7 +120,7 @@ fun ActivityCardPreview() {
             allowShyDogs = true,
             minDogSize = "Petit",
             maxDogSize = "Grand",
-            participantRequests = emptyList()
+            1
         ),
         goToJoinActivity = {}
     )
