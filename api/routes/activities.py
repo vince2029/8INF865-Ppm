@@ -20,6 +20,9 @@ from ..models import (
 
 router = APIRouter()
 
+class ParticipantRequestInfo(BaseModel):
+    email: str
+    status: str
 
 class ActivityWithCreatorPseudo(BaseModel):
     id: UUID
@@ -36,7 +39,7 @@ class ActivityWithCreatorPseudo(BaseModel):
     min_dog_size: Size
     max_dog_size: Size
     participant_count: int
-
+    participant_requests: list[ParticipantRequestInfo] = []
 
 class ActivityCreatePayload(BaseModel):
     title: str
@@ -73,6 +76,15 @@ def _serialize_activity(
     creator_pseudo: str,
     participant_count: int = 0,
 ) -> ActivityWithCreatorPseudo:
+
+    requests = [
+        ParticipantRequestInfo(
+            email=req.participant_email,
+            status=req.status.value
+        )
+        for req in activity.participant_requests
+    ]
+
     return ActivityWithCreatorPseudo(
         id=activity.id,
         creator_id=activity.creator_id,
@@ -88,7 +100,9 @@ def _serialize_activity(
         min_dog_size=activity.min_dog_size,
         max_dog_size=activity.max_dog_size,
         participant_count=participant_count,
+        participant_requests=requests,
     )
+
 
 
 def _get_accepted_participant_ids(session: Session, activity_id: UUID) -> List[UUID]:
