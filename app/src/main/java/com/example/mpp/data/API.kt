@@ -2,7 +2,7 @@ package com.example.mpp.data
 
 
 import com.example.mpp.data.models.activity.ActivityModel
-import com.example.mpp.data.models.activity.CreateActivityModel
+import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.remote.RetrofitClient
 
 object API {
@@ -44,35 +44,24 @@ object API {
         }
     }
 
-    suspend fun createActivity(
-        title: String,
-        description: String,
-        locationName: String,
-        dateTime: String,
-        maxParticipants: Int,
-        minEnergyLevel: Int,
-        maxEnergyLevel: Int,
-        allowShyDogs: Boolean,
-        minDogSize: String,
-        maxDogSize: String
-    ): Boolean {
+    suspend fun register(email: String, username: String, password: String): Boolean {
         return try {
-            val requestBody = CreateActivityModel(
-                title = title,
-                description = description,
-                locationName = locationName,
-                dateTime = dateTime,
-                maxParticipants = maxParticipants,
-                minEnergyLevel = minEnergyLevel,
-                maxEnergyLevel = maxEnergyLevel,
-                allowShyDogs = allowShyDogs,
-                minDogSize = minDogSize,
-                maxDogSize = maxDogSize
+            val response = RetrofitClient.service.register(
+                RegisterRequest(
+                    email = email,
+                    username = username,
+                    password = password
+                )
             )
 
-            val response = RetrofitClient.service.createActivity(requestBody)
-            println("CREATE ACTIVITY STATUS: ${response.code()}")
-            response.isSuccessful
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                currentUserToken = body.token
+                currentUserId = body.userId
+                true
+            } else {
+                false
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             false

@@ -39,6 +39,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Serializable
+object Register
+@Serializable
 object Login
 
 @Serializable
@@ -84,10 +86,20 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
 
             val navGraph = navController.createGraph(startDestination = Login) {
+                composable<Register> {
+                    Register(
+                        goToHome = {navController.navigate(Home)},
+                        goToLogin = {navController.navigate(Login)},
+                        registerAPI = {email, username, password -> API.register(email, username, password)},
+                        loginAPI = {username, password -> API.login(username, password)}
+                    )
+                }
+                
                 composable<Login> {
                     Login(
                         goToHome = { navController.navigate(Home) },
                         loginAPI = { username, password -> API.login(username, password) },
+                        goToRegister = { navController.navigate(Register)}
                     )
                 }
 
@@ -177,15 +189,15 @@ class MainActivity : ComponentActivity() {
             }
 
             val currentPage = navController.currentBackStackEntryAsState().value?.destination?.route
-
+            val pagesWithoutBars = listOf(Login::class.qualifiedName, Register::class.qualifiedName)
             Scaffold(
                 topBar = {
-                    if (currentPage != Login::class.qualifiedName) {
+                    if (currentPage !in pagesWithoutBars) {
                         TopHeaderBar(navController)
                     }
                 },
                 bottomBar = {
-                    if (currentPage != Login::class.qualifiedName) {
+                    if (currentPage !in pagesWithoutBars) {
                         BottomNavigationBar(navController)
                     }
                 }

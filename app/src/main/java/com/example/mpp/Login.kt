@@ -2,6 +2,7 @@ package com.example.mpp
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +31,7 @@ import kotlin.math.log
 
 
 @Composable
-fun Login(goToHome: () -> Unit, loginAPI: suspend (String, String) -> Boolean) {
+fun Login(goToHome: () -> Unit, loginAPI: suspend (String, String) -> Boolean, goToRegister: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -139,6 +141,18 @@ fun Login(goToHome: () -> Unit, loginAPI: suspend (String, String) -> Boolean) {
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Pas encore de compte ?", style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = goToRegister) {
+                Text("S'inscrire")
+            }
         }
     }
 }
