@@ -1,21 +1,11 @@
 from api.core.security import get_current_user_id
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from sqlalchemy import func
-from typing import Optional, List
-from datetime import datetime
 from pydantic import BaseModel
 from uuid import UUID
 from ..database import get_session
 from ..models import (
-    Activity,
-    Notification,
-    NotificationType,
-    Participation,
-    ParticipationRequest,
-    ParticipationStatus,
     Size,
-    User,
     Dog
 )
 
