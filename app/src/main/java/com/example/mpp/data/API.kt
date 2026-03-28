@@ -2,6 +2,7 @@ package com.example.mpp.data
 
 
 import com.example.mpp.data.models.activity.ActivityModel
+import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.remote.RetrofitClient
 
@@ -62,6 +63,42 @@ object API {
             } else {
                 false
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+
+    suspend fun createActivity(
+        title: String,
+        description: String,
+        locationName: String,
+        dateTime: String,
+        maxParticipants: Int,
+        minEnergyLevel: Int,
+        maxEnergyLevel: Int,
+        allowShyDogs: Boolean,
+        minDogSize: String,
+        maxDogSize: String
+    ): Boolean {
+        return try {
+            val requestBody = CreateActivityModel(
+                title = title,
+                description = description,
+                locationName = locationName,
+                dateTime = dateTime,
+                maxParticipants = maxParticipants,
+                minEnergyLevel = minEnergyLevel,
+                maxEnergyLevel = maxEnergyLevel,
+                allowShyDogs = allowShyDogs,
+                minDogSize = minDogSize,
+                maxDogSize = maxDogSize
+            )
+
+            val response = RetrofitClient.service.createActivity(requestBody)
+            println("CREATE ACTIVITY STATUS: ${response.code()}")
+            response.isSuccessful
         } catch (e: Exception) {
             e.printStackTrace()
             false

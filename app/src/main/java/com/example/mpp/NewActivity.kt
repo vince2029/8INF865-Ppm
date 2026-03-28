@@ -30,8 +30,6 @@ fun NewActivity(
     var description by remember { mutableStateOf("") }
     var locationName by remember { mutableStateOf("") }
     var maxParticipants by remember { mutableStateOf("") }
-
-    // --- Variables existantes (Date/Heure) ---
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
@@ -39,21 +37,15 @@ fun NewActivity(
     var tempDateMillis by remember { mutableStateOf<Long?>(null) }
     var selectedDateDisplay by remember { mutableStateOf("") }
     var selectedDateApiFormat by remember { mutableStateOf("") }
-
-    // --- NOUVELLES VARIABLES POUR LES CHIENS ---
     var allowShyDogs by remember { mutableStateOf(true) }
-    // Un slider de 1 à 5
     var energyRange by remember { mutableStateOf(1f..5f) }
-
     val dogSizes = listOf("PETIT", "MOYEN", "GRAND")
     var minDogSizeExpanded by remember { mutableStateOf(false) }
     var maxDogSizeExpanded by remember { mutableStateOf(false) }
     var minDogSize by remember { mutableStateOf(dogSizes.first()) }
     var maxDogSize by remember { mutableStateOf(dogSizes.last()) }
-
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
-
     val scrollState = rememberScrollState()
 
     Column(
@@ -115,7 +107,7 @@ fun NewActivity(
                 value = energyRange,
                 onValueChange = { energyRange = it },
                 valueRange = 1f..5f,
-                steps = 3 // Crée des crans pour s'arrêter sur 2, 3 et 4
+                steps = 3
             )
         }
 
