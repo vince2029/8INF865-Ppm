@@ -5,7 +5,9 @@ import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.models.dog.DogModel
+import com.example.mpp.data.models.notification.NotificationModel
 import com.example.mpp.data.models.participations.ParticipantModel
+import com.example.mpp.data.models.participations.ParticipationDecisionPayload
 import com.example.mpp.data.models.participations.ParticipationRequestResponse
 import com.example.mpp.data.remote.RetrofitClient
 import retrofit2.Response
@@ -165,6 +167,33 @@ object API {
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        }
+    }
+
+    suspend fun getNotifications(): List<NotificationModel>? {
+        return try {
+            val response = RetrofitClient.service.getNotifications()
+            if (response.isSuccessful) response.body() else null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun decideParticipation(requestId: String, decision: String): Boolean {
+        return try {
+            val payload = ParticipationDecisionPayload(decision = decision.uppercase())
+            RetrofitClient.service.decideParticipation(requestId, payload).isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun leaveActivity(activityId: String): Boolean {
+        return try {
+            RetrofitClient.service.leaveActivity(activityId).isSuccessful
+        } catch (e: Exception) {
+            false
         }
     }
 

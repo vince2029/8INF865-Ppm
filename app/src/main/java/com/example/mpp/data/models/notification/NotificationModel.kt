@@ -12,11 +12,14 @@ data class NotificationModel(
     @SerializedName("type")
     val type: String,
 
-    @SerializedName("content")
-    val content: String,
-
     @SerializedName("related_activity_id")
     val relatedActivityId: String?,
+
+    @SerializedName("related_activity_name")
+    val relatedActivityName: String? = null,
+
+    @SerializedName("related_request_id")
+    val relatedRequestId: String? = null,
 
     @SerializedName("is_read")
     val isRead: Boolean,
@@ -24,11 +27,11 @@ data class NotificationModel(
     @SerializedName("created_at")
     val createdAt: String,
 
-    // Adding these as they are mentioned in the requirements (pseudo)
-    // and common in such APIs, even if not in the minimal snippet.
-    // If they aren't there, we'll handle it.
     @SerializedName("sender_pseudo")
     val senderPseudo: String? = null,
+
+    @SerializedName("receiver_pseudo")
+    val receiverPseudo: String? = null,
 
     @SerializedName("status")
     val status: String? = null
