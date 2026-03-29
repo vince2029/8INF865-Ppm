@@ -29,6 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
@@ -151,12 +154,8 @@ fun ReceivedRequestCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = notification.senderPseudo ?: "Utilisateur inconnu",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = "veut rejoindre ${notification.relatedActivityName ?: "votre evenement"}",
-                    style = MaterialTheme.typography.bodySmall
+                    text = buildReceivedRequestText(notification),
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
             Row {
@@ -192,23 +191,6 @@ fun SentRequestCard(
                     text = buildSentRequestText(notification),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                val statusText = when(notification.type) {
-                    "PARTICIPATION_ACCEPTED" -> "Acceptée"
-                    "PARTICIPATION_REJECTED" -> "Refusée"
-                    "PARTICIPATION_PENDING" -> "En attente"
-                    else -> ""
-                }
-                if (statusText.isNotEmpty()) {
-                    Text(
-                        text = statusText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when(notification.type) {
-                            "PARTICIPATION_ACCEPTED" -> Color.Green
-                            "PARTICIPATION_REJECTED" -> Color.Red
-                            else -> Color.Gray
-                        }
-                    )
-                }
             }
             if (notification.type == "PARTICIPATION_PENDING") {
                 IconButton(onClick = onCancel) {
@@ -238,14 +220,59 @@ fun SimpleNotificationCard(notification: NotificationModel) {
     }
 }
 
-private fun buildSentRequestText(notification: NotificationModel): String {
+private fun buildReceivedRequestText(notification: NotificationModel) = buildAnnotatedString {
+    val sender = notification.senderPseudo ?: "Utilisateur inconnu"
+    val activityName = notification.relatedActivityName ?: "votre evenement"
+
+    pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+    append(sender)
+    pop()
+    append(" veut rejoindre ")
+    append(activityName)
+    append(".")
+}
+
+private fun buildSentRequestText(notification: NotificationModel) = buildAnnotatedString {
     val activityName = notification.relatedActivityName ?: "l'evenement"
     val sender = notification.senderPseudo ?: "L'organisateur"
-    return when (notification.type) {
-        "PARTICIPATION_PENDING" -> "Votre demande pour $activityName est en attente"
-        "PARTICIPATION_ACCEPTED" -> "$sender a accepte votre demande pour $activityName"
-        "PARTICIPATION_REJECTED" -> "$sender a refuse votre demande pour $activityName"
-        else -> "Mise a jour de participation"
+
+    when (notification.type) {
+        "PARTICIPATION_PENDING" -> {
+            append("Votre demande pour \"")
+            append(activityName)
+            append("\" est ")
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append("en cours")
+            pop()
+            append(".")
+        }
+        "PARTICIPATION_ACCEPTED" -> {
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append(sender)
+            pop()
+            append(" a ")
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append("accepté")
+            pop()
+            append(" votre demande pour \"")
+            append(activityName)
+            append("\".")
+        }
+        "PARTICIPATION_REJECTED" -> {
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append(sender)
+            pop()
+            append(" a ")
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append("refusé")
+            pop()
+            append(" votre demande pour \"")
+            append(activityName)
+            append("\".")
+        }
+        else -> {
+            append("Mise a jour de participation.")
+        }
     }
 }
 

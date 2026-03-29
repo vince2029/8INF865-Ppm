@@ -65,20 +65,9 @@ def wait_for_db() -> None:
             time.sleep(DB_RETRY_DELAY_SECONDS)
 
 
-def _migrate_notification_table() -> None:
-    """Apply lightweight compatibility migration for existing notification tables."""
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS sender_pseudo VARCHAR"))
-        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS receiver_pseudo VARCHAR"))
-        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS related_activity_name VARCHAR"))
-        connection.execute(text("ALTER TABLE notification ADD COLUMN IF NOT EXISTS related_request_id UUID"))
-        connection.execute(text("ALTER TABLE notification ALTER COLUMN IF EXISTS content DROP NOT NULL"))
-
-
 def init_db():
     wait_for_db()
     SQLModel.metadata.create_all(engine)
-    _migrate_notification_table()
 
     with Session(engine) as session:
         # Vérifie si on a déjà des données pour éviter les doublons
@@ -103,6 +92,8 @@ def init_db():
 
         for user in users_by_email.values():
             session.refresh(user)
+
+        users_by_id = {user.id: user for user in users_by_email.values()}
 
         for dog_data in seed_data["dogs"]:
             owner = users_by_email.get(dog_data["owner_email"])
@@ -175,6 +166,8 @@ def init_db():
                     status=request_status,
                 )
                 session.add(participation_request)
+                # Persist request row first so notification FK always points to an existing row.
+                session.flush()
 
                 if request_status == ParticipationStatus.ACCEPTED:
                     session.add(
@@ -212,11 +205,12 @@ def init_db():
                         if request_status == ParticipationStatus.ACCEPTED
                         else NotificationType.PARTICIPATION_REJECTED
                     )
+                    organizer = users_by_id.get(activity.creator_id)
                     session.add(
                         Notification(
                             user_id=requester.id,
                             type=notification_type,
-                            sender_pseudo="L'organisateur",
+                            sender_pseudo=organizer.pseudo if organizer else "L'organisateur",
                             related_activity_id=activity.id,
                             related_activity_name=activity.title,
                             related_request_id=participation_request.id,
