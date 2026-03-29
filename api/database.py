@@ -164,6 +164,8 @@ def init_db():
                     status=request_status,
                 )
                 session.add(participation_request)
+                # Persist request row first so notification FK always points to an existing row.
+                session.flush()
 
                 if request_status == ParticipationStatus.ACCEPTED:
                     session.add(
