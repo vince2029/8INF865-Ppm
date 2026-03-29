@@ -93,6 +93,8 @@ def init_db():
         for user in users_by_email.values():
             session.refresh(user)
 
+        users_by_id = {user.id: user for user in users_by_email.values()}
+
         for dog_data in seed_data["dogs"]:
             owner = users_by_email.get(dog_data["owner_email"])
             if owner is None:
@@ -203,11 +205,12 @@ def init_db():
                         if request_status == ParticipationStatus.ACCEPTED
                         else NotificationType.PARTICIPATION_REJECTED
                     )
+                    organizer = users_by_id.get(activity.creator_id)
                     session.add(
                         Notification(
                             user_id=requester.id,
                             type=notification_type,
-                            sender_pseudo="L'organisateur",
+                            sender_pseudo=organizer.pseudo if organizer else "L'organisateur",
                             related_activity_id=activity.id,
                             related_activity_name=activity.title,
                             related_request_id=participation_request.id,
