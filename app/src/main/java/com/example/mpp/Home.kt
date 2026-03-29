@@ -27,9 +27,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
+import com.example.mpp.data.models.activity.ParticipantRequest
 
 @Composable
-fun Home(goToLogin: () -> Unit,
+fun Home(
          goToNewActivity: () -> Unit,
          goToJoinActivity: (String) -> Unit,
     ){
@@ -96,7 +97,6 @@ fun ActivityCard(activity: ActivityModel, goToJoinActivity: (String) -> Unit,) {
 @Composable
 fun HomePreview() {
     Home(
-        goToLogin = {},
         goToNewActivity = {},
         goToJoinActivity = {}
     )
@@ -120,8 +120,17 @@ fun ActivityCardPreview() {
             allowShyDogs = true,
             minDogSize = "Petit",
             maxDogSize = "Grand",
-            1
+            participantCount = 1,
+            participantRequests = listOf(
+                ParticipantRequest(
+                    pseudo = "alice",
+                    status = "PENDING",
+                    userId = "user2"
+                )
+            )
         ),
         goToJoinActivity = {}
     )
 }
+
+

@@ -25,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
+import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,12 +56,61 @@ fun JoinActivityScreen(activityId: String) {
     }
 }
 
+data class UserDog(
+    val userName: String,
+    val dog: DogModel
+)
+
 @Composable
 fun ActivityScreen(
     activity: ActivityModel
 ) {
     var requestSent by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val currentUserId = API.currentUserId
+    val isCreator = activity.creatorId == currentUserId
+
+    val myRequest = activity.participantRequests
+        .find { it.userId == currentUserId }
+
+    val isPending = myRequest?.status == "PENDING"
+    val isAccepted = myRequest?.status == "ACCEPTED"
+    val isRejected = myRequest?.status == "REJECTED"
+
+    var participants by remember { mutableStateOf<List<ParticipantModel>>(emptyList()) }
+    var creatorUserDog by remember { mutableStateOf<UserDog?>(null) }
+    var acceptedUserDogs by remember { mutableStateOf<List<UserDog>>(emptyList()) }
+
+    LaunchedEffect(activity.activityId) {
+
+        API.getParticipants(activity.activityId)?.let {
+            participants = it
+        }
+
+        API.getDog(activity.creatorId)?.let { dog ->
+            creatorUserDog = UserDog(
+                userName = activity.creatorPseudo,
+                dog = dog
+            )
+        }
+        
+        val dogs = mutableListOf<UserDog>()
+
+        for (participant in participants) {
+            val dog = API.getDog(participant.participantId)
+            if (dog != null) {
+                dogs.add(
+                    UserDog(
+                        userName = participant.participantPseudo,
+                        dog = dog
+                    )
+                )
+            }
+        }
+
+        acceptedUserDogs = dogs
+    }
 
     Column(
         modifier = Modifier
@@ -72,88 +122,131 @@ fun ActivityScreen(
         ActivityDetails(activity)
         Spacer(Modifier.height(16.dp))
 
-        var participants by remember { mutableStateOf<List< ParticipantModel>>(emptyList()) }
-
-        LaunchedEffect(Unit) {
-            val result = API.getParticipants(activity.activityId)
-            if (result != null) {
-                participants = result
-            }
-        }
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp))
-            {
-                Text("Participants inscrits")
-                participants.forEach { participant ->
-                    ParticipantCard(participant)
-                }
-            }
-        }
+        DogSection(
+            creatorUserDog = creatorUserDog,
+            acceptedUserDogs = acceptedUserDogs
+        )
 
         Spacer(Modifier.height(24.dp))
 
-        if (!requestSent) {
-            Button(
-                onClick = {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val response = API.joinActivity(activity.activityId)
-
-                        if (response.isSuccessful) {
-                            requestSent = true
-                        } else {
-                            val errorBody = response.errorBody()?.string()
-                            val message = try {
-                                JSONObject(errorBody ?: "").getString("detail")
-                            } catch (e: Exception) {
-                                errorBody // fallback to raw text
-                            }
-
-                            errorMessage = message ?: "Erreur inconnue"
-
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Rejoindre l'activité")
-            }
-
-            errorMessage?.let {
+        when {
+            isCreator -> {
                 Text(
-                    text = it,
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp)
+                    text = "Vous êtes le créateur de l'activité",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray
                 )
             }
 
-        } else {
-            Text(
-                text = "Demande envoyée",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF4CAF50),
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
+            isAccepted -> {
+                Text(
+                    text = "Vous participez déjà",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color(0xFF4CAF50)
+                )
+            }
 
+            isPending || requestSent -> {
+                Text(
+                    text = "Demande en attente",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color(0xFFFFA000)
+                )
+            }
+
+            isRejected -> {
+                Text(
+                    text = "Votre demande a été refusée",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Red
+                )
+            }
+
+            else -> {
+                Button(
+                    onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val response = API.joinActivity(activity.activityId)
+
+                            if (response.isSuccessful) {
+                                requestSent = true
+                            } else {
+                                val errorBody = response.errorBody()?.string()
+                                val message = try {
+                                    JSONObject(errorBody ?: "").getString("detail")
+                                } catch (e: Exception) {
+                                    errorBody
+                                }
+                                errorMessage = message ?: "Erreur inconnue"
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Rejoindre l'activité")
+                }
+
+                errorMessage?.let {
+                    Text(
+                        text = it,
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun ParticipantCard(participant: ParticipantModel,) {
+fun DogSection(
+    creatorUserDog: UserDog?,
+    acceptedUserDogs: List<UserDog>
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(16.dp)
     ) {
-        Text(participant.participantPseudo)
+        Text("Chiens", style = MaterialTheme.typography.titleMedium)
+
+        Spacer(Modifier.height(12.dp))
+
+        creatorUserDog?.let {
+            Text("Chien de ${it.userName}", style = MaterialTheme.typography.bodyLarge)
+            DogCard(it.dog)
+            Spacer(Modifier.height(16.dp))
+        }
+
+        if (acceptedUserDogs.isNotEmpty()) {
+            Text("Chiens des participants", style = MaterialTheme.typography.bodyLarge)
+            acceptedUserDogs.forEach { userDog ->
+                Spacer(Modifier.height(8.dp))
+                Text(userDog.userName, style = MaterialTheme.typography.bodyMedium)
+                DogCard(userDog.dog)
+            }
+        }
     }
 }
 
-
+@Composable
+fun DogCard(dog: DogModel) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Nom: ${dog.name}", style = MaterialTheme.typography.bodyLarge)
+            Text("Âge: ${dog.age} ans")
+            Text("Taille: ${dog.size}")
+            Text("Énergie: ${dog.energyLevel}")
+            Text("Timide: ${if (dog.isShy) "Oui" else "Non"}")
+        }
+    }
+}
 
 @Composable
 fun ActivityHeader(activity: ActivityModel) {

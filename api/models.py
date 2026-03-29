@@ -22,7 +22,10 @@ class ParticipationStatus(str, Enum):
 
 class NotificationType(str, Enum):
     REQUEST = "REQUEST"
-    INFO = "INFO"
+    PARTICIPATION_ACCEPTED = "PARTICIPATION_ACCEPTED"
+    PARTICIPATION_REJECTED = "PARTICIPATION_REJECTED"
+    PARTICIPATION_PENDING = "PARTICIPATION_PENDING"
+    OTHER = "OTHER"
 
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -81,8 +84,11 @@ class ParticipationRequest(SQLModel, table=True):
 class Notification(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="user.id", index=True)
-    type: NotificationType = Field(default=NotificationType.INFO)
-    content: str
+    type: NotificationType = Field(default=NotificationType.OTHER)
+    sender_pseudo: Optional[str] = None
+    receiver_pseudo: Optional[str] = None
     related_activity_id: Optional[UUID] = Field(default=None, foreign_key="activity.id")
+    related_activity_name: Optional[str] = None
+    related_request_id: Optional[UUID] = Field(default=None, foreign_key="participationrequest.id")
     is_read: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)

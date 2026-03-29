@@ -20,7 +20,7 @@ class dogInfo(BaseModel):
     is_shy: bool
     owner_id: UUID
 
-@router.get("/dog/{owner_id}", response_model=dogInfo)
+@router.get("/{owner_id}", response_model=dogInfo)
 def get_dog_by_owner(
     owner_id: UUID,
     _: str = Depends(get_current_user_id),

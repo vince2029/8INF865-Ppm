@@ -23,6 +23,7 @@ router = APIRouter()
 class ParticipantRequestInfo(BaseModel):
     pseudo: str
     status: str
+    user_id: str
 
 class ActivityWithCreatorPseudo(BaseModel):
     id: UUID
@@ -139,14 +140,14 @@ def _get_activity_participant_requests(
     activity_id: UUID,
 ) -> List[ParticipantRequestInfo]:
     rows = session.exec(
-        select(User.pseudo, ParticipationRequest.status)
+        select(User.pseudo, User.id, ParticipationRequest.status)
         .join(User, ParticipationRequest.user_id == User.id)
         .where(ParticipationRequest.activity_id == activity_id)
     ).all()
 
     return [
-        ParticipantRequestInfo(pseudo=pseudo, status=status.value)
-        for pseudo, status in rows
+        ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id = str(id))
+        for pseudo,  id, status in rows
     ]
 
 
@@ -158,15 +159,15 @@ def _get_activity_participant_requests_map(
         return {}
 
     rows = session.exec(
-        select(ParticipationRequest.activity_id, User.pseudo, ParticipationRequest.status)
+        select(ParticipationRequest.activity_id, User.pseudo, ParticipationRequest.status, User.id)
         .join(User, ParticipationRequest.user_id == User.id)
         .where(ParticipationRequest.activity_id.in_(activity_ids))
     ).all()
 
     requests_map: dict[UUID, List[ParticipantRequestInfo]] = {activity_id: [] for activity_id in activity_ids}
-    for activity_id, pseudo, status in rows:
+    for activity_id, pseudo, status, id in rows:
         requests_map.setdefault(activity_id, []).append(
-            ParticipantRequestInfo(pseudo=pseudo, status=status.value)
+            ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id= str(id))
         )
 
     return requests_map
@@ -235,9 +236,10 @@ def update_activity(
         session.add(
             Notification(
                 user_id=participant_id,
-                type=NotificationType.INFO,
-                content=f"{creator_pseudo} a modifie l'activite '{activity.title}'.",
+                type=NotificationType.OTHER,
+                sender_pseudo=creator_pseudo,
                 related_activity_id=activity_id,
+                related_activity_name=activity.title,
             )
         )
 
@@ -297,8 +299,9 @@ def delete_activity(
         session.add(
             Notification(
                 user_id=participant_id,
-                type=NotificationType.INFO,
-                content=f"{creator_pseudo} a supprime l'activite '{activity_title}'.",
+                type=NotificationType.OTHER,
+                sender_pseudo=creator_pseudo,
+                related_activity_name=activity_title,
                 related_activity_id=None,
             )
         )

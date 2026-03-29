@@ -3,11 +3,14 @@ package com.example.mpp.data.models.activity
 import com.google.gson.annotations.SerializedName
 
 data class ParticipantRequest(
-    @SerializedName("email")
-    val email: String,
+    @SerializedName("pseudo")
+    val pseudo: String,
 
     @SerializedName("status")
-    val status: String
+    val status: String,
+
+    @SerializedName("user_id")
+    val userId: String
 )
 
 data class ActivityModel(
@@ -52,4 +55,8 @@ data class ActivityModel(
 
     @SerializedName("participant_count")
     val participantCount: Int,
+
+    @SerializedName("participant_requests")
+    val participantRequests: List<ParticipantRequest>
+
 )

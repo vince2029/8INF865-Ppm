@@ -4,10 +4,14 @@ import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.LoginResponse
 import com.example.mpp.data.models.auth.RegisterRequest
+import com.example.mpp.data.models.dog.DogModel
+import com.example.mpp.data.models.notification.NotificationModel
 import com.example.mpp.data.models.participations.ParticipantModel
+import com.example.mpp.data.models.participations.ParticipationDecisionPayload
 import com.example.mpp.data.models.participations.ParticipationRequestResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
@@ -51,5 +55,24 @@ interface ApiService {
     suspend fun getParticipants(
         @Path("activity_id") activityId: String
     ): Response<List<ParticipantModel>>
+
+    @GET("dog/{owner_id}")
+    suspend fun getDog(
+        @Path("owner_id") ownerId: String
+    ): Response<DogModel>
+
+    @GET("notification/list")
+    suspend fun getNotifications(): Response<List<NotificationModel>>
+
+    @POST("participation/decide/{request_id}")
+    suspend fun decideParticipation(
+        @Path("request_id") requestId: String,
+        @Body payload: ParticipationDecisionPayload
+    ): Response<ParticipationRequestResponse>
+
+    @DELETE("participation/leave/{activity_id}")
+    suspend fun leaveActivity(
+        @Path("activity_id") activityId: String
+    ): Response<Unit>
 
 }
