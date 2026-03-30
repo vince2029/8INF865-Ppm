@@ -104,6 +104,43 @@ def join_activity(activity_id: UUID, current_user_id: str = Depends(get_current_
     return {"status": "Demande envoyée"}
 
 
+@router.delete("/cancel/{request_id}", response_model=ParticipationRequestResponse)
+def cancel_participation_request(
+    request_id: UUID,
+    current_user_id: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    user_id = UUID(current_user_id)
+
+    # 1. Verifier que la demande existe
+    request = session.get(ParticipationRequest, request_id)
+    if not request:
+        raise HTTPException(status_code=404, detail="Demande introuvable")
+
+    # 2. Verifier que l'utilisateur connecte est bien le demandeur
+    if request.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Vous ne pouvez annuler que votre propre demande")
+
+    # 3. Verifier que la demande est en attente (non encore traitee)
+    if request.status != ParticipationStatus.PENDING:
+        raise HTTPException(status_code=400, detail="Cette demande ne peut pas être annulée")
+
+    # 4. Supprimer les notifications associees a cette demande
+    notifications = session.exec(
+        select(Notification).where(
+            Notification.related_request_id == request_id,
+        )
+    ).all()
+    for notification in notifications:
+        session.delete(notification)
+
+    # 5. Supprimer la demande
+    session.delete(request)
+
+    session.commit()
+    return {"status": "Demande annulée"}
+
+
 @router.post("/decide/{request_id}", response_model=ParticipationRequestResponse)
 def decide_participation_request(
     request_id: UUID,

@@ -15,6 +15,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -64,6 +65,11 @@ interface ApiService {
     @GET("notification/list")
     suspend fun getNotifications(): Response<List<NotificationModel>>
 
+    @PATCH("notification/{notification_id}/read")
+    suspend fun markNotificationAsRead(
+        @Path("notification_id") notificationId: String
+    ): Response<Unit>
+
     @POST("participation/decide/{request_id}")
     suspend fun decideParticipation(
         @Path("request_id") requestId: String,
@@ -74,5 +80,10 @@ interface ApiService {
     suspend fun leaveActivity(
         @Path("activity_id") activityId: String
     ): Response<Unit>
+
+    @DELETE("participation/cancel/{request_id}")
+    suspend fun cancelParticipationRequest(
+        @Path("request_id") requestId: String
+    ): Response<ParticipationRequestResponse>
 
 }

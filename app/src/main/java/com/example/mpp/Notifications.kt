@@ -1,30 +1,37 @@
 package com.example.mpp
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,28 +39,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.mpp.data.API
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mpp.data.models.notification.NotificationModel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun Notifications(goToHome: () -> Unit, onSendNotification: () -> Unit) {
-    var notifications by remember { mutableStateOf<List<NotificationModel>>(emptyList()) }
-    val scope = rememberCoroutineScope()
-
-    fun loadNotifications() {
-        scope.launch {
-            val result = API.getNotifications()
-            if (result != null) {
-                notifications = result
-            }
-        }
-    }
+fun Notifications(
+    goToHome: () -> Unit,
+    onSendNotification: () -> Unit,
+    viewModel: NotificationsViewModel = viewModel()
+) {
+    val notifications by viewModel.notifications.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        loadNotifications()
+        viewModel.snackbarMessage.collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
     }
 
     // Ségrégation des notifications selon les critères demandés
@@ -67,63 +73,114 @@ fun Notifications(goToHome: () -> Unit, onSendNotification: () -> Unit) {
         it !in receivedRequests && it !in sentRequests
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        Text(
-            text = stringResource(R.string.notifications),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // Section Demandes reçues
-        NotificationSectionHeader("Demandes reçues", receivedRequests.size)
-        receivedRequests.forEach { notification ->
-            ReceivedRequestCard(
-                notification = notification,
-                onAccept = {
-                    scope.launch {
-                        val requestId = notification.relatedRequestId ?: return@launch
-                        if (API.decideParticipation(requestId, "ACCEPTED")) loadNotifications()
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            if (isLoading && notifications.isEmpty()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.notifications),
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
                     }
-                },
-                onReject = {
-                    scope.launch {
-                        val requestId = notification.relatedRequestId ?: return@launch
-                        if (API.decideParticipation(requestId, "REJECTED")) loadNotifications()
+
+                    item { NotificationSectionHeader("Demandes reçues", receivedRequests.size) }
+                    items(receivedRequests, key = { it.id }) { notification ->
+                        ReceivedRequestCard(
+                            notification = notification,
+                            onAccept = {
+                                notification.relatedRequestId?.let {
+                                    viewModel.decideParticipation(notification.id, it, "ACCEPTED")
+                                }
+                            },
+                            onReject = {
+                                notification.relatedRequestId?.let {
+                                    viewModel.decideParticipation(notification.id, it, "REJECTED")
+                                }
+                            }
+                        )
                     }
-                }
-            )
-        }
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                    item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
 
-        // Section Demandes envoyées
-        NotificationSectionHeader("Demandes envoyées", sentRequests.size)
-        sentRequests.forEach { notification ->
-            SentRequestCard(
-                notification = notification,
-                onCancel = {
-                    scope.launch {
-                        notification.relatedActivityId?.let { activityId ->
-                            if (API.leaveActivity(activityId)) loadNotifications()
+                    item { NotificationSectionHeader("Demandes envoyées", sentRequests.size) }
+                    items(sentRequests, key = { it.id }) { notification ->
+                        DismissibleNotificationItem(
+                            onDismiss = { viewModel.dismissNotification(notification.id) }
+                        ) {
+                            SentRequestCard(
+                                notification = notification,
+                                onCancel = {
+                                    notification.relatedRequestId?.let {
+                                        viewModel.cancelParticipationRequest(notification.id, it)
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
+
+                    item { NotificationSectionHeader("Autre", otherNotifications.size) }
+                    items(otherNotifications, key = { it.id }) { notification ->
+                        DismissibleNotificationItem(
+                            onDismiss = { viewModel.dismissNotification(notification.id) }
+                        ) {
+                            SimpleNotificationCard(notification)
                         }
                     }
                 }
-            )
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-        // Section Autre
-        NotificationSectionHeader("Autre", otherNotifications.size)
-        otherNotifications.forEach { notification ->
-            SimpleNotificationCard(notification)
+            }
         }
     }
+}
+
+@Composable
+fun DismissibleNotificationItem(
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDismiss()
+                true
+            } else {
+                false
+            }
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        modifier = Modifier.padding(vertical = 4.dp),
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Text(
+                    text = "Marquer comme lu",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        },
+        content = { content() }
+    )
 }
 
 @Composable
@@ -160,10 +217,10 @@ fun ReceivedRequestCard(
             }
             Row {
                 IconButton(onClick = onAccept) {
-                    Icon(Icons.Default.Check, contentDescription = "Accepter")
+                    Icon(Icons.Default.Check, contentDescription = "Accepter", tint = Color.Gray)
                 }
                 IconButton(onClick = onReject) {
-                    Icon(Icons.Default.Close, contentDescription = "Refuser",)
+                    Icon(Icons.Default.Close, contentDescription = "Refuser", tint = Color.Gray)
                 }
             }
         }
@@ -177,8 +234,7 @@ fun SentRequestCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
@@ -205,8 +261,7 @@ fun SentRequestCard(
 fun SimpleNotificationCard(notification: NotificationModel) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -223,10 +278,9 @@ fun SimpleNotificationCard(notification: NotificationModel) {
 private fun buildReceivedRequestText(notification: NotificationModel) = buildAnnotatedString {
     val sender = notification.senderPseudo ?: "Utilisateur inconnu"
     val activityName = notification.relatedActivityName ?: "votre evenement"
+    val bold = SpanStyle(fontWeight = FontWeight.Bold)
 
-    pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-    append(sender)
-    pop()
+    withStyle(bold) { append(sender) }
     append(" veut rejoindre ")
     append(activityName)
     append(".")
@@ -235,44 +289,22 @@ private fun buildReceivedRequestText(notification: NotificationModel) = buildAnn
 private fun buildSentRequestText(notification: NotificationModel) = buildAnnotatedString {
     val activityName = notification.relatedActivityName ?: "l'evenement"
     val sender = notification.senderPseudo ?: "L'organisateur"
+    val bold = SpanStyle(fontWeight = FontWeight.Bold)
 
     when (notification.type) {
         "PARTICIPATION_PENDING" -> {
-            append("Votre demande pour \"")
-            append(activityName)
-            append("\" est ")
-            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-            append("en cours")
-            pop()
+            append("Votre demande pour \"$activityName\" est ")
+            withStyle(bold) { append("en cours") }
             append(".")
         }
-        "PARTICIPATION_ACCEPTED" -> {
-            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-            append(sender)
-            pop()
+        "PARTICIPATION_ACCEPTED", "PARTICIPATION_REJECTED" -> {
+            val action = if (notification.type == "PARTICIPATION_ACCEPTED") "accepté" else "refusé"
+            withStyle(bold) { append(sender) }
             append(" a ")
-            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-            append("accepté")
-            pop()
-            append(" votre demande pour \"")
-            append(activityName)
-            append("\".")
+            withStyle(bold) { append(action) }
+            append(" votre demande pour \"$activityName\".")
         }
-        "PARTICIPATION_REJECTED" -> {
-            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-            append(sender)
-            pop()
-            append(" a ")
-            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-            append("refusé")
-            pop()
-            append(" votre demande pour \"")
-            append(activityName)
-            append("\".")
-        }
-        else -> {
-            append("Mise a jour de participation.")
-        }
+        else -> append("Mise à jour de participation.")
     }
 }
 

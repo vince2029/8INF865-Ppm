@@ -180,21 +180,37 @@ object API {
         }
     }
 
+    suspend fun markNotificationAsRead(notificationId: String): Boolean {
+        return markNotificationAsReadWithResponse(notificationId).isSuccessful
+    }
+
+    suspend fun markNotificationAsReadWithResponse(notificationId: String): Response<Unit> {
+        return RetrofitClient.service.markNotificationAsRead(notificationId)
+    }
+
     suspend fun decideParticipation(requestId: String, decision: String): Boolean {
-        return try {
-            val payload = ParticipationDecisionPayload(decision = decision.uppercase())
-            RetrofitClient.service.decideParticipation(requestId, payload).isSuccessful
-        } catch (e: Exception) {
-            false
-        }
+        return decideParticipationWithResponse(requestId, decision).isSuccessful
+    }
+
+    suspend fun decideParticipationWithResponse(requestId: String, decision: String): Response<ParticipationRequestResponse> {
+        val payload = ParticipationDecisionPayload(decision = decision.uppercase())
+        return RetrofitClient.service.decideParticipation(requestId, payload)
     }
 
     suspend fun leaveActivity(activityId: String): Boolean {
-        return try {
-            RetrofitClient.service.leaveActivity(activityId).isSuccessful
-        } catch (e: Exception) {
-            false
-        }
+        return leaveActivityWithResponse(activityId).isSuccessful
+    }
+
+    suspend fun leaveActivityWithResponse(activityId: String): Response<Unit> {
+        return RetrofitClient.service.leaveActivity(activityId)
+    }
+
+    suspend fun cancelParticipationRequest(requestId: String): Boolean {
+        return cancelParticipationRequestWithResponse(requestId).isSuccessful
+    }
+
+    suspend fun cancelParticipationRequestWithResponse(requestId: String): Response<ParticipationRequestResponse> {
+        return RetrofitClient.service.cancelParticipationRequest(requestId)
     }
 
 
