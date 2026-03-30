@@ -304,6 +304,9 @@ def delete_activity(
     for participation in linked_participations:
         session.delete(participation)
 
+    # Ensure DB-level FK dependents are physically deleted before deleting the activity row.
+    session.flush()
+
     session.delete(activity)
 
     for participant_id in participant_ids:
