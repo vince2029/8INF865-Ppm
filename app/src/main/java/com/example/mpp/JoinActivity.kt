@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
+import com.example.mpp.data.models.activity.ParticipantRequest
 import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import kotlinx.coroutines.CoroutineScope
@@ -397,8 +398,66 @@ fun InfoRow(
     }
 }
 
+private val previewRequests = listOf(
+    ParticipantRequest(
+        pseudo = "Alice",
+        status = "pending",
+        userId = "u1",
+        requestId = "r1"
+    ),
+    ParticipantRequest(
+        pseudo = "Bob",
+        status = "accepted",
+        userId = "u2",
+        requestId = "r2"
+    )
+)
+
+private val previewActivity = ActivityModel(
+    activityId = "123",
+    creatorId = "creator_001",
+    creatorPseudo = "Vincent",
+    title = "Randonnée au parc",
+    description = "Une belle marche tranquille avec nos chiens.",
+    locationName = "Parc de la Rivière-du-Moulin",
+    dateTime = "12 avril 2025 - 14h00",
+    maxParticipants = 8,
+    minEnergyLevel = 1,
+    maxEnergyLevel = 4,
+    allowShyDogs = true,
+    minDogSize = "Petit",
+    maxDogSize = "Grand",
+    participantCount = 3,
+    participantRequests = previewRequests
+)
 
 
+@Preview(showBackground = true)
+@Composable
+fun ActivityHeaderPreview() {
+    MaterialTheme {
+        ActivityHeader(activity = previewActivity)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ActivityDetailsPreviews() {
+    MaterialTheme {
+        ActivityDetails(activity = previewActivity)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun InfoRowPreview() {
+    MaterialTheme {
+        InfoRow(
+            label = "Description",
+            value = "Une belle activité en plein air"
+        )
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
@@ -407,3 +466,65 @@ fun JoinActivityPreview() {
         Id = "456",
     )
 }
+
+private val previewDog = DogModel(
+    id = "dog_001",
+    name = "Rex",
+    age = 4,
+    size = "Moyen",
+    energyLevel = 3,
+    isShy = false,
+    ownerId = "owner_123"
+)
+
+private val previewCreatorUserDog = UserDog(
+    userName = "Vincent",
+    dog = previewDog
+)
+
+private val previewAcceptedDogs = listOf(
+    UserDog(
+        userName = "Alice",
+        dog = DogModel(
+            id = "dog_002",
+            name = "Bella",
+            age = 2,
+            size = "Petit",
+            energyLevel = 2,
+            isShy = true,
+            ownerId = "owner_456"
+        )
+    ),
+    UserDog(
+        userName = "Marc",
+        dog = DogModel(
+            id = "dog_003",
+            name = "Thor",
+            age = 6,
+            size = "Grand",
+            energyLevel = 4,
+            isShy = false,
+            ownerId = "owner_789"
+        )
+    )
+)
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewDogCard() {
+    MaterialTheme {
+        DogCard(dog = previewDog)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewDogSection() {
+    MaterialTheme {
+        DogSection(
+            creatorUserDog = previewCreatorUserDog,
+            acceptedUserDogs = previewAcceptedDogs
+        )
+    }
+}
+

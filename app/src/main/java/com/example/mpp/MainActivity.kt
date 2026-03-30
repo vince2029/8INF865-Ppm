@@ -240,19 +240,19 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text(text = stringResource(R.string.home)) }
         )
 
-        NavigationBarItem(
-            selected = currentRoute == Chats::class.qualifiedName,
-            onClick = { navController.navigate(Chats) },
-            icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = stringResource(R.string.chats)) },
-            label = { Text(text = stringResource(R.string.chats)) }
-        )
+        //NavigationBarItem(
+          //  selected = currentRoute == Chats::class.qualifiedName,
+          //  onClick = { navController.navigate(Chats) },
+          //  icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = stringResource(R.string.chats)) },
+          //  label = { Text(text = stringResource(R.string.chats)) }
+        //)
 
-        NavigationBarItem(
-            selected = currentRoute == Partners::class.qualifiedName,
-            onClick = { navController.navigate(Partners) },
-            icon = { Icon(Icons.Default.Group, contentDescription = stringResource(R.string.partners)) },
-            label = { Text(text = stringResource(R.string.partners)) }
-        )
+        //NavigationBarItem(
+            // selected = currentRoute == Partners::class.qualifiedName,
+            // onClick = { navController.navigate(Partners) },
+            // icon = { Icon(Icons.Default.Group, contentDescription = stringResource(R.string.partners)) },
+            // label = { Text(text = stringResource(R.string.partners)) }
+        // )
     }
 }
 
