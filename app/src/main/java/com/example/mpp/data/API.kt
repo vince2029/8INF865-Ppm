@@ -213,6 +213,14 @@ object API {
         return RetrofitClient.service.cancelParticipationRequest(requestId)
     }
 
+    suspend fun deleteActivity(activityId: String): Boolean {
+        return try {
+            RetrofitClient.service.deleteActivity(activityId).isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
 
     fun logout() {
         currentUserToken = null

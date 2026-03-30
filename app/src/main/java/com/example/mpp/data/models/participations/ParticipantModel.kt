@@ -8,5 +8,4 @@ data class ParticipantModel(
 
     @SerializedName("pseudo")
     val participantPseudo: String,
-
 )

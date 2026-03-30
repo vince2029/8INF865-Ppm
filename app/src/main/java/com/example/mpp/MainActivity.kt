@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.navigation.createGraph
 import androidx.navigation.compose.NavHost
@@ -16,6 +18,7 @@ import androidx.navigation.toRoute
 import com.example.mpp.data.API
 import kotlinx.serialization.Serializable
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -108,10 +111,7 @@ class MainActivity : ComponentActivity() {
                     Home(
                         goToNewActivity = { navController.navigate(NewActivity) },
                         goToJoinActivity = { activityId ->
-                            navController.navigate(
-                                JoinActivity(
-                                    activityId
-                                )
+                            navController.navigate(JoinActivity(activityId)
                             )
                         },
 
@@ -158,13 +158,12 @@ class MainActivity : ComponentActivity() {
                     val activityArgs = backStackEntry.toRoute<JoinActivity>()
                     JoinActivityScreen(
                         activityId = activityArgs.Id,
+                        navController = navController,
                     )
                 }
 
                 composable<ActivityList> {
                     ActivityList(
-                        goToHome = { navController.navigate(Home) },
-                        goToActivityDetails = { activityId -> navController.navigate(ActivityDetails(activityId))},
                         goToJoinActivity = { activityId -> navController.navigate(JoinActivity(activityId))},
                         goToNewActivity = { navController.navigate(NewActivity) },
                     )
@@ -262,6 +261,7 @@ fun TopHeaderBar(navController: NavController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(WindowInsets.statusBars.asPaddingValues())
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween

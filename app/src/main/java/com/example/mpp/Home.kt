@@ -1,15 +1,18 @@
 package com.example.mpp
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -22,115 +25,96 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
-import com.example.mpp.data.models.activity.ParticipantRequest
 
 @Composable
 fun Home(
-         goToNewActivity: () -> Unit,
-         goToJoinActivity: (String) -> Unit,
-    ){
+    goToNewActivity: () -> Unit,
+    goToJoinActivity: (String) -> Unit,
+) {
+    var isLoading by remember { mutableStateOf(true) }
+    var activities by remember { mutableStateOf<List<ActivityModel>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        val result = API.getActivities()
+        if (result != null) {
+            activities = result
+        }
+        isLoading = false
+    }
+
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { goToNewActivity() }
-            ) {
+            FloatingActionButton(onClick = goToNewActivity) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.add)
+                    contentDescription = "stringResource(R.string.add)"
                 )
             }
         }
-
     ) { innerPadding ->
-        Column(
+
+        LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            contentPadding = PaddingValues(bottom = 80.dp) // avoid FAB overlap
         ) {
-            var activities by remember { mutableStateOf<List<ActivityModel>>(emptyList()) }
 
-            LaunchedEffect(Unit) {
-                val result = API.getActivities()
-                if (result != null) {
-                    activities = result
+            item {
+                Text(
+                    text = "Activités susceptibles de vous plaire",
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+
+            when {
+                isLoading -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
+                activities.isEmpty() -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Aucune autre activité disponible.")
+                        }
+                    }
+                }
+
+                else -> {
+                    items(activities) { activity ->
+                        ActivityListItem(activity = activity) {
+                            goToJoinActivity(activity.activityId)
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
                 }
             }
-
-            Text(
-                text = stringResource(R.string.activity_list),
-                modifier = Modifier.padding(top = 16.dp)
-            )
-            activities.forEach { activity ->
-                ActivityCard(activity, goToJoinActivity)
-            }
         }
     }
 }
 
-@Composable
-fun ActivityCard(activity: ActivityModel, goToJoinActivity: (String) -> Unit,) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
-        Text(activity.title)
-        Text(activity.description)
-        Text("Location: ${activity.locationName}")
-        Text("Date: ${activity.dateTime}")
-        Button(onClick = {goToJoinActivity(activity.activityId)}) {
-            Text(text = stringResource(R.string.go_join_activity, activity.activityId))
-        }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun HomePreview() {
-    Home(
-        goToNewActivity = {},
-        goToJoinActivity = {}
-    )
-}
 
-@Preview(showBackground = true)
-@Composable
-fun ActivityCardPreview() {
-    ActivityCard(
-        activity = ActivityModel(
-            activityId = "1",
-            creatorId = "user1",
-            creatorPseudo = "bob",
-            title = "Balade au parc",
-            description = "Une super balade avec les chiens",
-            locationName = "Parc Central",
-            dateTime = "2023-10-27 14:00",
-            maxParticipants = 5,
-            minEnergyLevel = 1,
-            maxEnergyLevel = 5,
-            allowShyDogs = true,
-            minDogSize = "Petit",
-            maxDogSize = "Grand",
-            participantCount = 1,
-            participantRequests = listOf(
-                ParticipantRequest(
-                    pseudo = "alice",
-                    status = "PENDING",
-                    userId = "user2"
-                )
-            )
-        ),
-        goToJoinActivity = {}
-    )
-}
 
 

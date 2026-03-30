@@ -86,4 +86,9 @@ interface ApiService {
         @Path("request_id") requestId: String
     ): Response<ParticipationRequestResponse>
 
+    @DELETE("activity/{activity_id}")
+    suspend fun deleteActivity(
+        @Path("activity_id") activityId: String
+    ): Response<Unit>
+
 }
