@@ -32,8 +32,6 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityList(
-    goToHome: () -> Unit,
-    goToActivityDetails: (String) -> Unit,
     goToJoinActivity: (String) -> Unit,
     goToNewActivity: () -> Unit,
 ) {
@@ -134,7 +132,7 @@ fun ActivityList(
                     ) {
                         items(activitiesToShow) { activity ->
                             ActivityListItem(activity = activity) {
-                                goToActivityDetails(activity.activityId)
+                                goToJoinActivity(activity.activityId)
                             }
                         }
                     }
@@ -247,8 +245,6 @@ private fun formatDateTime(dateString: String): String {
 @Composable
 fun ActivityListPreview() {
     ActivityList(
-        goToHome = {},
-        goToActivityDetails = {},
         goToJoinActivity = {},
         goToNewActivity = {}
     )

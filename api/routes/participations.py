@@ -266,6 +266,17 @@ def leave_activity(
     # 3. Supprimer la participation
     session.delete(participation)
 
+    # Remove participation request if exists (PENDING / ACCEPTED / REJECTED)
+        participation_request = session.exec(
+            select(ParticipationRequest).where(
+                ParticipationRequest.activity_id == activity_id,
+                ParticipationRequest.user_id == user_id,
+            )
+        ).first()
+
+        if participation_request:
+            session.delete(participation_request)
+
     # 4. Notifier l'organisateur
     notification = Notification(
         user_id=activity.creator_id,

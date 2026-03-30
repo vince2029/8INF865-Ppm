@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.dog.DogModel
@@ -30,10 +32,11 @@ import com.example.mpp.data.models.participations.ParticipantModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 @Composable
-fun JoinActivityScreen(activityId: String) {
+fun JoinActivityScreen(activityId: String,  navController: NavController) {
     var activity by remember { mutableStateOf<ActivityModel?>(null) }
 
     LaunchedEffect(activityId) {
@@ -50,7 +53,7 @@ fun JoinActivityScreen(activityId: String) {
     ) {
         when {
             activity != null -> {
-                ActivityScreen(activity!!)
+                ActivityScreen(activity!!, navController)
             }
         }
     }
@@ -63,10 +66,17 @@ data class UserDog(
 
 @Composable
 fun ActivityScreen(
-    activity: ActivityModel
+    activity: ActivityModel,
+    navController: NavController
 ) {
+
     var requestSent by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var hasLeft by remember { mutableStateOf(false) }
+    var participants by remember { mutableStateOf<List<ParticipantModel>>(emptyList()) }
+    var creatorUserDog by remember { mutableStateOf<UserDog?>(null) }
+    var acceptedUserDogs by remember { mutableStateOf<List<UserDog>>(emptyList()) }
+
 
     val currentUserId = API.currentUserId
     val isCreator = activity.creatorId == currentUserId
@@ -74,13 +84,15 @@ fun ActivityScreen(
     val myRequest = activity.participantRequests
         .find { it.userId == currentUserId }
 
+    print(myRequest?.status)
     val isPending = myRequest?.status == "PENDING"
     val isAccepted = myRequest?.status == "ACCEPTED"
     val isRejected = myRequest?.status == "REJECTED"
 
-    var participants by remember { mutableStateOf<List<ParticipantModel>>(emptyList()) }
-    var creatorUserDog by remember { mutableStateOf<UserDog?>(null) }
-    var acceptedUserDogs by remember { mutableStateOf<List<UserDog>>(emptyList()) }
+    val showPending = (isPending || requestSent) && !hasLeft
+    val showAccepted = isAccepted && !hasLeft
+    val showRejected = isRejected && !hasLeft
+
 
     LaunchedEffect(activity.activityId) {
 
@@ -131,30 +143,87 @@ fun ActivityScreen(
 
         when {
             isCreator -> {
-                Text(
-                    text = "Vous êtes le créateur de l'activité",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray
-                )
+                Column {
+                    Text(
+                        text = "Vous êtes le créateur de l'activité",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.Gray
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                val success = API.deleteActivity(activity.activityId)
+                                if (success) {
+                                    withContext(Dispatchers.Main) {
+                                        navController.popBackStack()
+                                    }
+                                } else {
+                                    errorMessage = "Impossible de supprimer l'activité"
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) {
+                        Text("Supprimer l'activité")
+                    }
+
+                    errorMessage?.let {
+                        Text(
+                            text = it,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
             }
 
-            isAccepted -> {
-                Text(
-                    text = "Vous participez déjà",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFF4CAF50)
-                )
+
+            showAccepted || showPending -> {
+                Column {
+                    Text(
+                        text = if (showAccepted) "Vous participez déjà" else "Demande en attente",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (showAccepted) Color(0xFF4CAF50) else Color(0xFFFFA000)
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                val success = API.leaveActivity(activity.activityId)
+                                if (success) {
+                                    hasLeft = true
+                                    requestSent = false
+                                    errorMessage = null
+                                } else {
+                                    errorMessage = "Impossible d'annuler votre participation"
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) {
+                        Text(if (showAccepted) "Quitter l'activité" else "Annuler la demande")
+                    }
+
+                    errorMessage?.let {
+                        Text(
+                            text = it,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
             }
 
-            isPending || requestSent -> {
-                Text(
-                    text = "Demande en attente",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFFFFA000)
-                )
-            }
-
-            isRejected -> {
+            showRejected -> {
                 Text(
                     text = "Votre demande a été refusée",
                     style = MaterialTheme.typography.bodyLarge,
@@ -170,6 +239,7 @@ fun ActivityScreen(
 
                             if (response.isSuccessful) {
                                 requestSent = true
+                                hasLeft = false
                             } else {
                                 val errorBody = response.errorBody()?.string()
                                 val message = try {
@@ -196,6 +266,7 @@ fun ActivityScreen(
                 }
             }
         }
+
     }
 }
 
