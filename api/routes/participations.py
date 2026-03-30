@@ -127,6 +127,9 @@ def decide_participation_request(
     if request.status != ParticipationStatus.PENDING:
         raise HTTPException(status_code=400, detail="Cette demande a deja ete traitee")
 
+    if payload.decision not in {"ACCEPTED", "REJECTED"}:
+        raise HTTPException(status_code=400, detail="Mauvais parametre de decision. Valeurs acceptees: ACCEPTED, REJECTED")
+
     if payload.decision == "ACCEPTED":
         existing_participation = session.exec(
             select(Participation).where(
@@ -151,6 +154,31 @@ def decide_participation_request(
         request.status = ParticipationStatus.REJECTED
         decision_text = "refusee"
         notification_type = NotificationType.PARTICIPATION_REJECTED
+
+    # Les notifications de demande d'origine deviennent obsoletes apres traitement.
+    creator_request_notifications = session.exec(
+        select(Notification).where(
+            Notification.user_id == creator_id,
+            Notification.related_request_id == request.id,
+            Notification.type == NotificationType.REQUEST,
+            Notification.is_read == False,
+        )
+    ).all()
+    for notification in creator_request_notifications:
+        notification.is_read = True
+        session.add(notification)
+
+    requester_pending_notifications = session.exec(
+        select(Notification).where(
+            Notification.user_id == request.user_id,
+            Notification.related_request_id == request.id,
+            Notification.type == NotificationType.PARTICIPATION_PENDING,
+            Notification.is_read == False,
+        )
+    ).all()
+    for notification in requester_pending_notifications:
+        notification.is_read = True
+        session.add(notification)
 
     creator = session.get(User, creator_id)
     creator_pseudo = creator.pseudo if creator else "L'organisateur"
