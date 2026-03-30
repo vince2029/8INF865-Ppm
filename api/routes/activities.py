@@ -147,7 +147,7 @@ def _get_activity_participant_requests(
     ).all()
 
     return [
-        ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id = str(user_id), request = str(request_id))
+        ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id = str(user_id), request_id = str(request_id))
         for pseudo,  user_id, status, request_id in rows
     ]
 
