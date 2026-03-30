@@ -24,6 +24,7 @@ class ParticipantRequestInfo(BaseModel):
     pseudo: str
     status: str
     user_id: str
+    id: str
 
 class ActivityWithCreatorPseudo(BaseModel):
     id: UUID
@@ -140,14 +141,14 @@ def _get_activity_participant_requests(
     activity_id: UUID,
 ) -> List[ParticipantRequestInfo]:
     rows = session.exec(
-        select(User.pseudo, User.id, ParticipationRequest.status)
+        select(User.pseudo, User.id, ParticipationRequest.status, ParticipationRequest.id)
         .join(User, ParticipationRequest.user_id == User.id)
         .where(ParticipationRequest.activity_id == activity_id)
     ).all()
 
     return [
-        ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id = str(id))
-        for pseudo,  id, status in rows
+        ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id = str(user_id), request = str(request_id))
+        for pseudo,  user_id, status, request_id in rows
     ]
 
 
@@ -159,15 +160,15 @@ def _get_activity_participant_requests_map(
         return {}
 
     rows = session.exec(
-        select(ParticipationRequest.activity_id, User.pseudo, ParticipationRequest.status, User.id)
+        select(ParticipationRequest.activity_id, User.pseudo, ParticipationRequest.status, User.id, ParticipationRequest.id)
         .join(User, ParticipationRequest.user_id == User.id)
         .where(ParticipationRequest.activity_id.in_(activity_ids))
     ).all()
 
     requests_map: dict[UUID, List[ParticipantRequestInfo]] = {activity_id: [] for activity_id in activity_ids}
-    for activity_id, pseudo, status, id in rows:
+    for activity_id, pseudo, status, user_id, request_id in rows:
         requests_map.setdefault(activity_id, []).append(
-            ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id= str(id))
+            ParticipantRequestInfo(pseudo=pseudo, status=status.value, user_id= str(user_id), request_id = str(request_id))
         )
 
     return requests_map

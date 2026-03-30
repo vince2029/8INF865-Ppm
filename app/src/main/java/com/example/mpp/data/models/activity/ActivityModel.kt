@@ -10,7 +10,10 @@ data class ParticipantRequest(
     val status: String,
 
     @SerializedName("user_id")
-    val userId: String
+    val userId: String,
+
+    @SerializedName("request_id")
+    val requestId: String,
 )
 
 data class ActivityModel(
