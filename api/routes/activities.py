@@ -278,20 +278,31 @@ def delete_activity(
     linked_requests = session.exec(
         select(ParticipationRequest).where(ParticipationRequest.activity_id == activity_id)
     ).all()
-    for request in linked_requests:
-        session.delete(request)
-
     linked_participations = session.exec(
         select(Participation).where(Participation.activity_id == activity_id)
     ).all()
-    for participation in linked_participations:
-        session.delete(participation)
-
     linked_notifications = session.exec(
         select(Notification).where(Notification.related_activity_id == activity_id)
     ).all()
+    linked_request_ids = [request.id for request in linked_requests]
+    if linked_request_ids:
+        request_linked_notifications = session.exec(
+            select(Notification).where(Notification.related_request_id.in_(linked_request_ids))
+        ).all()
+        existing_notification_ids = {notification.id for notification in linked_notifications}
+        for notification in request_linked_notifications:
+            if notification.id not in existing_notification_ids:
+                linked_notifications.append(notification)
+
+    # Delete dependent rows first to satisfy FK constraints on Notification.related_request_id.
     for notification in linked_notifications:
         session.delete(notification)
+
+    for request in linked_requests:
+        session.delete(request)
+
+    for participation in linked_participations:
+        session.delete(participation)
 
     session.delete(activity)
 

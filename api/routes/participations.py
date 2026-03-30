@@ -275,6 +275,12 @@ def leave_activity(
     ).first()
 
     if participation_request:
+        linked_notifications = session.exec(
+            select(Notification).where(Notification.related_request_id == participation_request.id)
+        ).all()
+        for notification in linked_notifications:
+            session.delete(notification)
+
         session.delete(participation_request)
 
     # 4. Notifier l'organisateur
