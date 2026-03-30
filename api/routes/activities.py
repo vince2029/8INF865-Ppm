@@ -24,7 +24,7 @@ class ParticipantRequestInfo(BaseModel):
     pseudo: str
     status: str
     user_id: str
-    id: str
+    request_id: str
 
 class ActivityWithCreatorPseudo(BaseModel):
     id: UUID
