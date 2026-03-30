@@ -69,7 +69,7 @@ fun ActivityScreen(
     activity: ActivityModel,
     navController: NavController
 ) {
-
+    var activityState by remember { mutableStateOf(activity) }
     var requestSent by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var hasLeft by remember { mutableStateOf(false) }
@@ -78,10 +78,9 @@ fun ActivityScreen(
     var acceptedUserDogs by remember { mutableStateOf<List<UserDog>>(emptyList()) }
 
     val currentUserId = API.currentUserId
-    val isCreator = activity.creatorId == currentUserId
+    val myRequest = activityState.participantRequests.find { it.userId == currentUserId }
 
-    val myRequest = activity.participantRequests.find { it.userId == currentUserId }
-
+    val isCreator = activityState.creatorId == currentUserId
     val isPending = myRequest?.status == "PENDING"
     val isAccepted = myRequest?.status == "ACCEPTED"
     val isRejected = myRequest?.status == "REJECTED"
@@ -90,31 +89,19 @@ fun ActivityScreen(
     val showAccepted = isAccepted && !hasLeft
     val showRejected = isRejected && !hasLeft
 
-
-    LaunchedEffect(activity.activityId) {
-
-        API.getParticipants(activity.activityId)?.let {
-            participants = it
-        }
-
-        API.getDog(activity.creatorId)?.let { dog ->
-            creatorUserDog = UserDog(
-                userName = activity.creatorPseudo,
-                dog = dog
-            )
+    LaunchedEffect(activityState.activityId) {
+        API.getParticipants(activityState.activityId)?.let { participants = it }
+        API.getDog(activityState.creatorId)?.let { dog ->
+            creatorUserDog = UserDog(activityState.creatorPseudo, dog)
         }
     }
 
     LaunchedEffect(participants) {
-        val dogs = participants.mapNotNull { participant ->
+        acceptedUserDogs = participants.mapNotNull { participant ->
             API.getDog(participant.participantId)?.let { dog ->
-                UserDog(
-                    userName = participant.participantPseudo,
-                    dog = dog
-                )
+                UserDog(participant.participantPseudo, dog)
             }
         }
-        acceptedUserDogs = dogs
     }
 
     Column(
@@ -122,9 +109,9 @@ fun ActivityScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        ActivityHeader(activity)
+        ActivityHeader(activityState)
         Spacer(Modifier.height(16.dp))
-        ActivityDetails(activity)
+        ActivityDetails(activityState)
         Spacer(Modifier.height(16.dp))
 
         DogSection(
@@ -142,28 +129,19 @@ fun ActivityScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.Gray
                     )
-
                     Spacer(Modifier.height(12.dp))
-
                     Button(
                         onClick = {
                             CoroutineScope(Dispatchers.IO).launch {
-                                val success = API.deleteActivity(activity.activityId)
+                                val success = API.deleteActivity(activityState.activityId)
                                 if (success) {
-                                    withContext(Dispatchers.Main) {
-                                        navController.popBackStack()
-                                    }
-                                } else {
-                                    errorMessage = "Impossible de supprimer l'activité"
-                                }
+                                    withContext(Dispatchers.Main) { navController.popBackStack() }
+                                } else errorMessage = "Impossible de supprimer l'activité"
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
-                        Text("Supprimer l'activité")
-                    }
-
+                    ) { Text("Supprimer l'activité") }
                     errorMessage?.let {
                         Text(
                             text = it,
@@ -182,29 +160,21 @@ fun ActivityScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color(0xFF4CAF50)
                     )
-
                     Spacer(Modifier.height(12.dp))
-
                     Button(
                         onClick = {
                             CoroutineScope(Dispatchers.IO).launch {
-                                val success = API.leaveActivity(activity.activityId)
-
+                                val success = API.leaveActivity(activityState.activityId)
                                 if (success) {
                                     hasLeft = true
                                     requestSent = false
                                     errorMessage = null
-                                } else {
-                                    errorMessage = "Impossible d'annuler votre participation"
-                                }
+                                } else errorMessage = "Impossible d'annuler votre participation"
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
-                        Text("Quitter l'activité")
-                    }
-
+                    ) { Text("Quitter l'activité") }
                     errorMessage?.let {
                         Text(
                             text = it,
@@ -223,28 +193,23 @@ fun ActivityScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color(0xFFFFA000)
                     )
-
                     Spacer(Modifier.height(12.dp))
-
                     Button(
                         onClick = {
                             CoroutineScope(Dispatchers.IO).launch {
-                                val success = API.cancelParticipationRequest(myRequest?.requestId ?: "1")
+                                val success = API.cancelParticipationRequest(myRequest?.requestId ?: "")
                                 if (success) {
                                     hasLeft = true
                                     requestSent = false
                                     errorMessage = null
-                                } else {
-                                    errorMessage = "Impossible d'annuler votre demande"
-                                }
+                                    val updated = API.getActivity(activityState.activityId)
+                                    if (updated != null) activityState = updated
+                                } else errorMessage = "Impossible d'annuler votre demande"
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
-                        Text("Annuler la demande")
-                    }
-
+                    ) { Text("Annuler la demande") }
                     errorMessage?.let {
                         Text(
                             text = it,
@@ -269,27 +234,23 @@ fun ActivityScreen(
                     Button(
                         onClick = {
                             CoroutineScope(Dispatchers.IO).launch {
-                                val response = API.joinActivity(activity.activityId)
-
+                                val response = API.joinActivity(activityState.activityId)
                                 if (response.isSuccessful) {
                                     requestSent = true
                                     hasLeft = false
+                                    val updated = API.getActivity(activityState.activityId)
+                                    if (updated != null) activityState = updated
                                 } else {
                                     val errorBody = response.errorBody()?.string()
                                     val message = try {
                                         JSONObject(errorBody ?: "").getString("detail")
-                                    } catch (e: Exception) {
-                                        errorBody
-                                    }
+                                    } catch (e: Exception) { errorBody }
                                     errorMessage = message ?: "Erreur inconnue"
                                 }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Rejoindre l'activité")
-                    }
-
+                    ) { Text("Rejoindre l'activité") }
                     errorMessage?.let {
                         Text(
                             text = it,
@@ -301,9 +262,9 @@ fun ActivityScreen(
                 }
             }
         }
-
     }
 }
+
 
 
 
