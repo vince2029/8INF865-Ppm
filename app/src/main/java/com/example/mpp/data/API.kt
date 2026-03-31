@@ -1,10 +1,12 @@
 package com.example.mpp.data
 
 
+import com.example.mpp.Taille
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.models.dog.DogModel
+import com.example.mpp.data.models.dog.NewDogModel
 import com.example.mpp.data.models.notification.NotificationModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import com.example.mpp.data.models.participations.ParticipationDecisionPayload
@@ -87,6 +89,25 @@ object API {
             } else {
                 false
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun createNewDog(name: String, age: Int, size: Taille, energyLevel: Int, isShy: Boolean): Boolean{
+        return try {
+            val requestBody = NewDogModel(
+                name = name,
+                age = age,
+                size = size,
+                energyLevel = energyLevel,
+                isShy = isShy,
+                ownerId = currentUserId,
+            )
+            val response = RetrofitClient.service.createNewDog(requestBody)
+            response.isSuccessful
+            true
         } catch (e: Exception) {
             e.printStackTrace()
             false

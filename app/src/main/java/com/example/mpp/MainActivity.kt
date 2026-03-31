@@ -54,6 +54,9 @@ object Home
 object Profile
 
 @Serializable
+object NewDog
+
+@Serializable
 object Partners
 
 @Serializable
@@ -121,7 +124,14 @@ class MainActivity : ComponentActivity() {
                 composable<Profile> {
                     Profile(
                         goToHome = { navController.navigate(Home) },
-                        goToLogin = {navController.navigate(Login)}
+                        goToLogin = {navController.navigate(Login)},
+                        goToNewDog = {navController.navigate(NewDog)}
+                    )
+                }
+
+                composable<NewDog> {
+                    NewDog(
+                        goBack = {navController.navigate(Profile)}
                     )
                 }
 

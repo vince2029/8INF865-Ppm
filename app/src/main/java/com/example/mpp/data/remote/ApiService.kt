@@ -5,6 +5,7 @@ import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.LoginResponse
 import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.models.dog.DogModel
+import com.example.mpp.data.models.dog.NewDogModel
 import com.example.mpp.data.models.notification.NotificationModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import com.example.mpp.data.models.participations.ParticipationDecisionPayload
@@ -60,6 +61,12 @@ interface ApiService {
     @GET("dog/{owner_id}")
     suspend fun getDog(
         @Path("owner_id") ownerId: String
+    ): Response<DogModel>
+
+
+    @POST("dog/{owner_id}")
+    suspend fun createNewDog(
+        @Body request: NewDogModel
     ): Response<DogModel>
 
     @GET("notification/list")
