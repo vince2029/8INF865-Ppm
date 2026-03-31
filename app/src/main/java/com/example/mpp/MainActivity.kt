@@ -123,7 +123,6 @@ class MainActivity : ComponentActivity() {
 
                 composable<Profile> {
                     Profile(
-                        goToHome = { navController.navigate(Home) },
                         goToLogin = {navController.navigate(Login)},
                         goToNewDog = {navController.navigate(NewDog)}
                     )

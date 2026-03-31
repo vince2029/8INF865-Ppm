@@ -31,7 +31,7 @@ import com.example.mpp.data.API
 import com.example.mpp.data.models.dog.DogModel
 
 @Composable
-fun Profile(goToHome: () -> Unit, goToLogin: () -> Unit, goToNewDog: () -> Unit) {
+fun Profile( goToLogin: () -> Unit, goToNewDog: () -> Unit) {
 
     var userDog by remember { mutableStateOf<DogModel?>(null) }
 
@@ -47,12 +47,6 @@ fun Profile(goToHome: () -> Unit, goToLogin: () -> Unit, goToNewDog: () -> Unit)
         verticalArrangement = Arrangement.Center
     ) {
         Text(text = stringResource(R.string.profile))
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = goToHome) {
-            Text(text = stringResource(R.string.go_home))
-        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -101,10 +95,4 @@ fun Profile(goToHome: () -> Unit, goToLogin: () -> Unit, goToNewDog: () -> Unit)
             Text("Se déconnecter")
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProfilePreview() {
-    Profile(goToHome = {}, goToLogin = {}, goToNewDog = {})
 }
