@@ -66,6 +66,7 @@ interface ApiService {
 
     @POST("dog/{owner_id}")
     suspend fun createNewDog(
+        @Path("owner_id") ownerId: String,
         @Body request: NewDogModel
     ): Response<DogModel>
 
