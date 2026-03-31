@@ -50,7 +50,7 @@ def get_dog_by_owner(
 @router.post("/{owner_id}", response_model=dogInfo, status_code=status.HTTP_201_CREATED)
 def create_dog(
     owner_id: UUID,
-    dog: dogInfo,
+    dog: dogCreate,
     _: str = Depends(get_current_user_id),
     session: Session = Depends(get_session),
 ):
