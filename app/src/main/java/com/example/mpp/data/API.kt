@@ -105,7 +105,7 @@ object API {
                 isShy = isShy,
                 ownerId = currentUserId,
             )
-            val response = RetrofitClient.service.createNewDog(requestBody)
+            val response = RetrofitClient.service.createNewDog(currentUserId?: "", requestBody)
             response.isSuccessful
             true
         } catch (e: Exception) {
