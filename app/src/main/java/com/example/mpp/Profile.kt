@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -24,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 
 @Composable
-fun Profile(goToHome: () -> Unit, goToLogin: () -> Unit) {
+fun Profile(goToHome: () -> Unit, goToLogin: () -> Unit, goToNewDog: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -38,6 +39,18 @@ fun Profile(goToHome: () -> Unit, goToLogin: () -> Unit) {
 
         Button(onClick = goToHome) {
             Text(text = stringResource(R.string.go_home))
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(onClick = goToNewDog) {
+            Icon(
+                imageVector = Icons.Filled.Pets,
+                contentDescription = "Ajouter un chien",
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Ajouter un chien")
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -65,5 +78,5 @@ fun Profile(goToHome: () -> Unit, goToLogin: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun ProfilePreview() {
-    Profile(goToHome = {}, goToLogin = {})
+    Profile(goToHome = {}, goToLogin = {}, goToNewDog = {})
 }

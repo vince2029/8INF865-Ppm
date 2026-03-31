@@ -1,6 +1,7 @@
 package com.example.mpp.data
 
 
+import com.example.mpp.Taille
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
@@ -94,7 +95,7 @@ object API {
         }
     }
 
-    suspend fun createNewDog(name: String, age: Int, size: String, energyLevel: Int, isShy: Boolean): Boolean{
+    suspend fun createNewDog(name: String, age: Int, size: Taille, energyLevel: Int, isShy: Boolean): Boolean{
         return try {
             val requestBody = NewDogModel(
                 name = name,
