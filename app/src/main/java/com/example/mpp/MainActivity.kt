@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
 
                 composable<Profile> {
                     Profile(
-                        goToLogin = {navController.navigate(Login)},
+                        goToLogin = {navController.navigate(Login){ popUpTo(0) { inclusive = true }}},
                         goToNewDog = {navController.navigate(NewDog)}
                     )
                 }
@@ -197,9 +197,13 @@ class MainActivity : ComponentActivity() {
 
             val currentPage = navController.currentBackStackEntryAsState().value?.destination?.route
             val pagesWithoutBars = listOf(Login::class.qualifiedName, Register::class.qualifiedName)
+            val pagesWithArrow = listOf(JoinActivity::class.qualifiedName, Register::class.qualifiedName)
+
+            val showArrow = pagesWithArrow.any { prefix -> prefix?.let { currentPage?.startsWith(it) == true } == true }
+
             Scaffold(
                 topBar = {
-                    if (currentPage !in pagesWithoutBars) {
+                    if (showArrow) {
                         TopHeaderBar(navController)
                     }
                 },
@@ -249,6 +253,13 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text(text = stringResource(R.string.home)) }
         )
 
+        NavigationBarItem(
+            selected = currentRoute == Profile::class.qualifiedName,
+            onClick = { navController.navigate(Profile) },
+            icon = { Icon(Icons.Default.AccountCircle, contentDescription = "Profile")},
+            label = { Text("Profile") }
+        )
+
         //NavigationBarItem(
           //  selected = currentRoute == Chats::class.qualifiedName,
           //  onClick = { navController.navigate(Chats) },
@@ -270,8 +281,7 @@ fun TopHeaderBar(navController: NavController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(WindowInsets.statusBars.asPaddingValues())
-            .padding(8.dp),
+            .padding(WindowInsets.statusBars.asPaddingValues()),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -280,12 +290,6 @@ fun TopHeaderBar(navController: NavController) {
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back"
             )
-        }
-
-        Text("MILES PETITES PATTES")
-        IconButton(onClick = {navController.navigate(Profile) }) {
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
         }
     }
 }
