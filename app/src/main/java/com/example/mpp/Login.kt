@@ -9,8 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -25,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -36,6 +42,7 @@ fun Login(goToHome: () -> Unit, loginAPI: suspend (String, String) -> Boolean, g
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     // Regex simple pour valider l'email
     val isEmailValid = remember(username) {
@@ -84,14 +91,28 @@ fun Login(goToHome: () -> Unit, loginAPI: suspend (String, String) -> Boolean, g
                 error = null
             },
             label = { Text("Mot de passe") },
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) {
+                VisualTransformation.None
+            }else{
+                PasswordVisualTransformation()
+            },
             singleLine = true,
             isError = password.isEmpty() && error != null, // Rouge si on a tenté de valider à vide
             supportingText = {
                 if (password.isEmpty() && error != null) {
                     Text("Le mot de passe ne peut pas être vide")
                 }
-            }
+            },
+            trailingIcon = {
+                val icon = if (passwordVisible) {
+                    Icons.Default.Visibility
+                } else {
+                    Icons.Default.VisibilityOff
+                }
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = icon, contentDescription = null)
+                }
+            },
         )
 
         Spacer(modifier = Modifier.height(16.dp))
