@@ -2,7 +2,6 @@ package com.example.mpp
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,49 +14,29 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.ParticipantRequest
 import com.example.mpp.data.models.dog.DogModel
-import com.example.mpp.data.models.participations.ParticipantModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
+
 
 @Composable
-fun JoinActivityScreen(activityId: String,  navController: NavController) {
-    var activity by remember { mutableStateOf<ActivityModel?>(null) }
-
-    LaunchedEffect(activityId) {
-        val result = API.getActivity(activityId)
-        if (result != null) {
-            activity = result
-            }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        when {
-            activity != null -> {
-                ActivityScreen(activity!!, navController)
-            }
-        }
-    }
+fun JoinActivityScreen(
+    activityId: String,
+    navController: NavController
+) {
+    ActivityScreen(
+        activityId = activityId,
+        navController = navController
+    )
 }
 
 data class UserDog(
@@ -65,54 +44,51 @@ data class UserDog(
     val dog: DogModel
 )
 
+class ActivityViewModelFactory(
+    private val activityId: String
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return ActivityViewModel(activityId) as T
+    }
+}
+
+
 @Composable
 fun ActivityScreen(
-    activity: ActivityModel,
-    navController: NavController
+    activityId: String,
+    navController: NavController,
+    viewModel: ActivityViewModel = viewModel(
+        factory = ActivityViewModelFactory(activityId)
+    )
 ) {
-    var activityState by remember { mutableStateOf(activity) }
-    var requestSent by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var hasLeft by remember { mutableStateOf(false) }
-    var participants by remember { mutableStateOf<List<ParticipantModel>>(emptyList()) }
-    var creatorUserDog by remember { mutableStateOf<UserDog?>(null) }
-    var acceptedUserDogs by remember { mutableStateOf<List<UserDog>>(emptyList()) }
+    val activity = viewModel.activityState
+    if (activity == null) {
+        Text("Chargement...", modifier = Modifier.padding(16.dp))
+        return
+    }
 
     val currentUserId = API.currentUserId
-    val myRequest = activityState.participantRequests.find { it.userId == currentUserId }
-
-    val isCreator = activityState.creatorId == currentUserId
+    val myRequest = activity.participantRequests.find { it.userId == currentUserId }
+    val isCreator = activity.creatorId == currentUserId
     val isPending = myRequest?.status == "PENDING"
     val isAccepted = myRequest?.status == "ACCEPTED"
     val isRejected = myRequest?.status == "REJECTED"
-
-    val showPending = (isPending || requestSent) && !hasLeft
-    val showAccepted = isAccepted && !hasLeft
-    val showRejected = isRejected && !hasLeft
-
-    LaunchedEffect(activityState.activityId) {
-        API.getParticipants(activityState.activityId)?.let { participants = it }
-        API.getDog(activityState.creatorId)?.let { dog ->
-            creatorUserDog = UserDog(activityState.creatorPseudo, dog)
-        }
-    }
-
-    LaunchedEffect(participants) {
-        acceptedUserDogs = participants.mapNotNull { participant ->
-            API.getDog(participant.participantId)?.let { dog ->
-                UserDog(participant.participantPseudo, dog)
-            }
-        }
-    }
+    val showPending = (isPending || viewModel.requestSent) && !viewModel.hasLeft
+    val showAccepted = isAccepted && !viewModel.hasLeft
+    val showRejected = isRejected && !viewModel.hasLeft
+    val creatorUserDog = viewModel.creatorUserDog
+    val acceptedUserDogs = viewModel.acceptedUserDogs
+    val errorMessage = viewModel.errorMessage
+    val invalidDog = viewModel.invalidDogMessage
 
     Column(
         modifier = Modifier
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        ActivityHeader(activityState)
+        ActivityHeader(activity)
         Spacer(Modifier.height(16.dp))
-        ActivityDetails(activityState)
+        ActivityDetails(activity)
         Spacer(Modifier.height(16.dp))
 
         DogSection(
@@ -121,7 +97,6 @@ fun ActivityScreen(
         )
 
         Spacer(Modifier.height(24.dp))
-
         when {
             isCreator -> {
                 Column {
@@ -133,27 +108,23 @@ fun ActivityScreen(
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val success = API.deleteActivity(activityState.activityId)
-                                if (success) {
-                                    withContext(Dispatchers.Main) { navController.popBackStack() }
-                                } else errorMessage = "Impossible de supprimer l'activité"
+                            viewModel.deleteActivity {
+                                navController.popBackStack()
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) { Text("Supprimer l'activité") }
+
                     errorMessage?.let {
                         Text(
                             text = it,
                             color = Color.Red,
-                            style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
                 }
             }
-
             showAccepted -> {
                 Column {
                     Text(
@@ -163,30 +134,20 @@ fun ActivityScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                     Button(
-                        onClick = {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val success = API.leaveActivity(activityState.activityId)
-                                if (success) {
-                                    hasLeft = true
-                                    requestSent = false
-                                    errorMessage = null
-                                } else errorMessage = "Impossible d'annuler votre participation"
-                            }
-                        },
+                        onClick = { viewModel.leave() },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) { Text("Quitter l'activité") }
+
                     errorMessage?.let {
                         Text(
                             text = it,
                             color = Color.Red,
-                            style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
                 }
             }
-
             showPending -> {
                 Column {
                     Text(
@@ -196,32 +157,20 @@ fun ActivityScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                     Button(
-                        onClick = {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val success = API.cancelParticipationRequest(myRequest?.requestId ?: "")
-                                if (success) {
-                                    hasLeft = true
-                                    requestSent = false
-                                    errorMessage = null
-                                    val updated = API.getActivity(activityState.activityId)
-                                    if (updated != null) activityState = updated
-                                } else errorMessage = "Impossible d'annuler votre demande"
-                            }
-                        },
+                        onClick = { viewModel.cancelRequest(myRequest?.requestId ?: "") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) { Text("Annuler la demande") }
+
                     errorMessage?.let {
                         Text(
                             text = it,
                             color = Color.Red,
-                            style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
                 }
             }
-
             showRejected -> {
                 Text(
                     text = "Votre demande a été refusée",
@@ -229,42 +178,43 @@ fun ActivityScreen(
                     color = Color.Red
                 )
             }
-
             else -> {
                 Column {
+
+
+
+                    invalidDog?.let {
+                        Text(
+                            text = it,
+                            color = Color.Red,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+
                     Button(
-                        onClick = {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val response = API.joinActivity(activityState.activityId)
-                                if (response.isSuccessful) {
-                                    requestSent = true
-                                    hasLeft = false
-                                    val updated = API.getActivity(activityState.activityId)
-                                    if (updated != null) activityState = updated
-                                } else {
-                                    val errorBody = response.errorBody()?.string()
-                                    val message = try {
-                                        JSONObject(errorBody ?: "").getString("detail")
-                                    } catch (e: Exception) { errorBody }
-                                    errorMessage = message ?: "Erreur inconnue"
-                                }
-                            }
-                        },
+                        onClick = { viewModel.join() },
+                        enabled = viewModel.canJoin,
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Rejoindre l'activité") }
+                    ) {
+                        Text("Rejoindre l'activité")
+                    }
+
                     errorMessage?.let {
                         Text(
                             text = it,
                             color = Color.Red,
-                            style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
+
+
                 }
             }
         }
     }
 }
+
+
 
 
 
