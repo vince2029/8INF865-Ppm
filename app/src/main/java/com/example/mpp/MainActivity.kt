@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.mpp.data.API
+import com.example.mpp.data.session.SessionManager
 import kotlinx.serialization.Serializable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
@@ -84,11 +85,15 @@ class MainActivity : ComponentActivity() {
         requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
 
         NotificationHelper.createChannel(this)
+        SessionManager.initialize(applicationContext)
+        val restoredSession = SessionManager.restoreSession()
+        API.setSession(restoredSession.token, restoredSession.userId)
 
         setContent {
             val navController = rememberNavController()
+            val startDestination = if (SessionManager.hasSession()) Home else Login
 
-            val navGraph = navController.createGraph(startDestination = Login) {
+            val navGraph = navController.createGraph(startDestination = startDestination) {
                 composable<Register> {
                     Register(
                         goToHome = {navController.navigate(Home)},

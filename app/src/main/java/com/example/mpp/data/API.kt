@@ -1,6 +1,5 @@
 package com.example.mpp.data
 
-
 import com.example.mpp.Taille
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
@@ -12,19 +11,25 @@ import com.example.mpp.data.models.participations.ParticipantModel
 import com.example.mpp.data.models.participations.ParticipationDecisionPayload
 import com.example.mpp.data.models.participations.ParticipationRequestResponse
 import com.example.mpp.data.remote.RetrofitClient
+import com.example.mpp.data.session.SessionManager
 import retrofit2.Response
 
 object API {
     var currentUserToken: String? = null
     var currentUserId: String? = null
 
+    fun setSession(token: String?, userId: String?) {
+        currentUserToken = token
+        currentUserId = userId
+        SessionManager.saveSession(token, userId)
+    }
+
     suspend fun login(username: String, password: String): Boolean {
         return try {
             val response = RetrofitClient.service.login(username, password)
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                currentUserToken = body.token
-                currentUserId = body.userId
+                setSession(body.token, body.userId)
                 true
             } else {
                 false
@@ -83,8 +88,7 @@ object API {
 
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                currentUserToken = body.token
-                currentUserId = body.userId
+                setSession(body.token, body.userId)
                 true
             } else {
                 false
@@ -244,7 +248,6 @@ object API {
 
 
     fun logout() {
-        currentUserToken = null
-        currentUserId = null
+        setSession(null, null)
     }
 }
