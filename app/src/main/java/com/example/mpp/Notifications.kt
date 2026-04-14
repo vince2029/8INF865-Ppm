@@ -1,17 +1,19 @@
 package com.example.mpp
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -25,31 +27,36 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mpp.data.models.notification.NotificationModel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun Notifications(
     goToHome: () -> Unit,
+    goToJoinActivity: (String) -> Unit,
     onSendNotification: () -> Unit,
     viewModel: NotificationsViewModel = viewModel()
 ) {
@@ -96,35 +103,47 @@ fun Notifications(
             ) {
                 item { NotificationSectionHeader("Demandes reçues", receivedRequests.size) }
                 items(receivedRequests, key = { it.id }) { notification ->
-                    ReceivedRequestCard(
-                        notification = notification,
-                        onAccept = {
-                            notification.relatedRequestId?.let {
-                                viewModel.decideParticipation(notification.id, it, "ACCEPTED")
+                    SwipeToReadNotificationItem(
+                        onMarkRead = { viewModel.dismissNotification(notification.id) }
+                    ) {
+                        NotificationActionCard(
+                            notification = notification,
+                            onAccept = {
+                                notification.relatedRequestId?.let {
+                                    viewModel.decideParticipation(notification.id, it, "ACCEPTED")
+                                }
+                            },
+                            onReject = {
+                                notification.relatedRequestId?.let {
+                                    viewModel.decideParticipation(notification.id, it, "REJECTED")
+                                }
+                            },
+                            onOpenActivity = {
+                                notification.relatedActivityId?.let { goToJoinActivity(it) }
                             }
-                        },
-                        onReject = {
-                            notification.relatedRequestId?.let {
-                                viewModel.decideParticipation(notification.id, it, "REJECTED")
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
 
                 item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
 
                 item { NotificationSectionHeader("Demandes envoyées", sentRequests.size) }
                 items(sentRequests, key = { it.id }) { notification ->
-                    DismissibleNotificationItem(
-                        onDismiss = { viewModel.dismissNotification(notification.id) }
+                    SwipeToReadNotificationItem(
+                        onMarkRead = { viewModel.dismissNotification(notification.id) }
                     ) {
-                        SentRequestCard(
+                        NotificationActionCard(
                             notification = notification,
-                            onCancel = {
-                                notification.relatedRequestId?.let {
-                                    viewModel.cancelParticipationRequest(notification.id, it)
+                            onOpenActivity = {
+                                notification.relatedActivityId?.let { goToJoinActivity(it) }
+                            },
+                            extraAction = if (notification.type == "PARTICIPATION_PENDING") {
+                                {
+                                    notification.relatedRequestId?.let {
+                                        viewModel.cancelParticipationRequest(notification.id, it)
+                                    }
                                 }
-                            }
+                            } else null
                         )
                     }
                 }
@@ -133,10 +152,15 @@ fun Notifications(
 
                 item { NotificationSectionHeader("Autre", otherNotifications.size) }
                 items(otherNotifications, key = { it.id }) { notification ->
-                    DismissibleNotificationItem(
-                        onDismiss = { viewModel.dismissNotification(notification.id) }
+                    SwipeToReadNotificationItem(
+                        onMarkRead = { viewModel.dismissNotification(notification.id) }
                     ) {
-                        SimpleNotificationCard(notification)
+                        NotificationActionCard(
+                            notification = notification,
+                            onOpenActivity = {
+                                notification.relatedActivityId?.let { goToJoinActivity(it) }
+                            }
+                        )
                     }
                 }
             }
@@ -145,41 +169,167 @@ fun Notifications(
 }
 
 @Composable
-fun DismissibleNotificationItem(
-    onDismiss: () -> Unit,
+fun SwipeToReadNotificationItem(
+    onMarkRead: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDismiss()
-                true
-            } else {
-                false
-            }
-        }
-    )
+    val actionWidth = 88.dp
+    val density = LocalDensity.current
+    val actionWidthPx = with(density) { actionWidth.toPx() }
+    val offsetX = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
 
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        modifier = Modifier.padding(vertical = 4.dp),
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Text(
-                    text = "Marquer comme lu",
-                    color = Color.Gray,
-                    style = MaterialTheme.typography.labelLarge
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier.matchParentSize(),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            IconButton(onClick = {
+                scope.launch {
+                    offsetX.animateTo(0f)
+                    onMarkRead()
+                }
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Marquer comme lue",
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
-        },
-        content = { content() }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .pointerInput(actionWidthPx) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            val nextOffset = (offsetX.value + dragAmount).coerceIn(-actionWidthPx, 0f)
+                            scope.launch { offsetX.snapTo(nextOffset) }
+                        },
+                        onDragEnd = {
+                            scope.launch {
+                                val targetOffset = if (offsetX.value < -actionWidthPx * 0.5f) {
+                                    -actionWidthPx
+                                } else {
+                                    0f
+                                }
+                                offsetX.animateTo(targetOffset)
+                            }
+                        }
+                    )
+                }
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+fun NotificationActionCard(
+    notification: NotificationModel,
+    onOpenActivity: (() -> Unit)? = null,
+    onAccept: (() -> Unit)? = null,
+    onReject: (() -> Unit)? = null,
+    extraAction: (() -> Unit)? = null,
+) {
+    Card(
+        onClick = { onOpenActivity?.invoke() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    )
+    {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                when (notification.type) {
+                    "REQUEST" -> {
+                        Text(
+                            text = buildReceivedRequestText(notification),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    "PARTICIPATION_PENDING", "PARTICIPATION_ACCEPTED", "PARTICIPATION_REJECTED" -> {
+                        Text(
+                            text = buildSentRequestText(notification),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    else -> {
+                        Text(
+                            text = buildOtherNotificationText(notification),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = notification.createdAt,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                if (onAccept != null && onReject != null && notification.type == "REQUEST") {
+                    Row {
+                        IconButton(onClick = onAccept) {
+                            Icon(Icons.Default.Check, contentDescription = "Accepter", tint = Color.Gray)
+                        }
+                        IconButton(onClick = onReject) {
+                            Icon(Icons.Default.Close, contentDescription = "Refuser", tint = Color.Gray)
+                        }
+                    }
+                } else {
+                    if (extraAction != null) {
+                        TextButton(onClick = extraAction) {
+                            Text("Annuler")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReceivedRequestCard(
+    notification: NotificationModel,
+    onAccept: () -> Unit,
+    onReject: () -> Unit
+) {
+    NotificationActionCard(
+        notification = notification,
+        onAccept = onAccept,
+        onReject = onReject,
+    )
+}
+
+@Composable
+fun SentRequestCard(
+    notification: NotificationModel,
+    onCancel: () -> Unit
+) {
+    NotificationActionCard(
+        notification = notification,
+        extraAction = onCancel
+    )
+}
+
+@Composable
+fun SimpleNotificationCard(notification: NotificationModel) {
+    NotificationActionCard(
+        notification = notification,
     )
 }
 
@@ -193,88 +343,6 @@ fun NotificationSectionHeader(title: String, count: Int) {
 }
 
 @Composable
-fun ReceivedRequestCard(
-    notification: NotificationModel,
-    onAccept: () -> Unit,
-    onReject: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = buildReceivedRequestText(notification),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Row {
-                IconButton(onClick = onAccept) {
-                    Icon(Icons.Default.Check, contentDescription = "Accepter", tint = Color.Gray)
-                }
-                IconButton(onClick = onReject) {
-                    Icon(Icons.Default.Close, contentDescription = "Refuser", tint = Color.Gray)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SentRequestCard(
-    notification: NotificationModel,
-    onCancel: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = buildSentRequestText(notification),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            if (notification.type == "PARTICIPATION_PENDING") {
-                IconButton(onClick = onCancel) {
-                    Icon(Icons.Default.Close, contentDescription = "Annuler", tint = Color.Gray)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SimpleNotificationCard(notification: NotificationModel) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = buildOtherNotificationText(notification), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = notification.createdAt,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
-        }
-    }
-}
-
 private fun buildReceivedRequestText(notification: NotificationModel) = buildAnnotatedString {
     val sender = notification.senderPseudo ?: "Utilisateur inconnu"
     val activityName = notification.relatedActivityName ?: "votre evenement"
@@ -323,6 +391,7 @@ private fun buildOtherNotificationText(notification: NotificationModel): String 
 fun NotificationsPreview() {
     Notifications(
         goToHome = {},
+        goToJoinActivity = {},
         onSendNotification = {}
     )
 }

@@ -84,9 +84,6 @@ data class ChatsSpecific(val Id: String)
 @Serializable
 data class JoinActivity(val Id: String)
 
-@Serializable
-data class ActivityDetails(val Id: String)
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -214,18 +211,10 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                composable<ActivityDetails> { backStackEntry ->
-                    val activityArgs = backStackEntry.toRoute<ActivityDetails>()
-                    ActivityDetails(
-                        activityId = activityArgs.Id,
-                        goToHome = { navController.navigate(Home) },
-                        goToActivityList = { navController.navigate(ActivityList) },
-                    )
-                }
-
                 composable<Notifications> {
                     Notifications(
                         goToHome = { navController.navigate(Home) },
+                        goToJoinActivity = { activityId -> navController.navigate(JoinActivity(activityId)) },
                         onSendNotification = { NotificationHelper.sendTestNotification(this@MainActivity) }
                     )
                 }
