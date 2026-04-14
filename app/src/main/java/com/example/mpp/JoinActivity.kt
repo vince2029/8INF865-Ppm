@@ -14,6 +14,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,13 +28,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
-import com.example.mpp.data.models.activity.ParticipantRequest
 import com.example.mpp.data.models.dog.DogModel
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+
 
 
 @Composable
@@ -85,6 +91,10 @@ fun ActivityScreen(
     val acceptedUserDogs = viewModel.acceptedUserDogs
     val errorMessage = viewModel.errorMessage
     val invalidDog = viewModel.invalidDogMessage
+    var showLeaveDialog by remember { mutableStateOf(false) }
+    var showCancelRequestDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = Modifier
@@ -112,11 +122,7 @@ fun ActivityScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                     Button(
-                        onClick = {
-                            viewModel.deleteActivity {
-                                navController.popBackStack()
-                            }
-                        },
+                        onClick = { showDeleteDialog = true },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) { Text("Supprimer l'activité") }
@@ -139,7 +145,7 @@ fun ActivityScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                     Button(
-                        onClick = { viewModel.leave() },
+                        onClick = { showLeaveDialog = true },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) { Text("Quitter l'activité") }
@@ -162,7 +168,7 @@ fun ActivityScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                     Button(
-                        onClick = { viewModel.cancelRequest(myRequest?.requestId ?: "") },
+                        onClick = { showCancelRequestDialog = true },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) { Text("Annuler la demande") }
@@ -215,6 +221,64 @@ fun ActivityScreen(
 
                 }
             }
+
+        }
+        if (showLeaveDialog) {
+            AlertDialog(
+                onDismissRequest = { showLeaveDialog = false },
+                title = { Text("Quitter l'activité") },
+                text = { Text("Es-tu sûr de vouloir quitter cette activité?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showLeaveDialog = false
+                        viewModel.leave()
+                    }) { Text("Oui") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLeaveDialog = false }) {
+                        Text("Annuler")
+                    }
+                }
+            )
+        }
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Supprimer l'activité") },
+                text = { Text("Cette action est irréversible. Confirmer la suppression?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteActivity {
+                            navController.popBackStack()
+                        }
+                    }) { Text("Supprimer") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Annuler")
+                    }
+                }
+            )
+        }
+        if (showCancelRequestDialog) {
+            AlertDialog(
+                onDismissRequest = { showCancelRequestDialog = false },
+                title = { Text("Annuler la demande") },
+                text = { Text("Es-tu sûr de vouloir annuler ta demande de participation?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showCancelRequestDialog = false
+                        viewModel.cancelRequest(myRequest?.requestId ?: "")
+                    }) { Text("Oui") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCancelRequestDialog = false }) {
+                        Text("Annuler")
+                    }
+                }
+            )
         }
     }
 }
