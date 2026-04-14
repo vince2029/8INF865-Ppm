@@ -8,14 +8,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
+import com.example.mpp.data.remote.LocationClient
+import com.example.mpp.data.remote.PhotonFeature
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -30,7 +34,13 @@ fun NewActivity(
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    
+    // Autocomplete Location State
     var locationName by remember { mutableStateOf("") }
+    var suggestions by remember { mutableStateOf<List<PhotonFeature>>(emptyList()) }
+    var isSearching by remember { mutableStateOf(false) }
+    var locationExpanded by remember { mutableStateOf(false) }
+
     var maxParticipants by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -75,6 +85,30 @@ fun NewActivity(
                 energyRange.endInclusive != 5f ||
                 minDogSize != dogSizes.first() ||
                 maxDogSize != dogSizes.last()
+        }
+    }
+
+    LaunchedEffect(locationName) {
+        if (locationName.length < 3) {
+            suggestions = emptyList()
+            locationExpanded = false
+            return@LaunchedEffect
+        }
+
+        if (suggestions.any { it.properties.getDisplayName() == locationName }) {
+            return@LaunchedEffect
+        }
+
+        delay(500)
+        isSearching = true
+        try {
+            val response = LocationClient.service.search(locationName)
+            suggestions = response.features
+            locationExpanded = suggestions.isNotEmpty()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isSearching = false
         }
     }
 
@@ -152,19 +186,52 @@ fun NewActivity(
                 minLines = 3
             )
 
-            OutlinedTextField(
-                value = locationName,
-                onValueChange = { locationName = it },
-                label = { Text("Lieu de la balade") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+            ExposedDropdownMenuBox(
+                expanded = locationExpanded,
+                onExpandedChange = { locationExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = locationName,
+                    onValueChange = { locationName = it },
+                    label = { Text("Lieu de la balade") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryEditable),
+                    singleLine = true,
+                    trailingIcon = {
+                        if (isSearching) CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    }
+                )
+                
+                if (suggestions.isNotEmpty()) {
+                    ExposedDropdownMenu(
+                        expanded = locationExpanded,
+                        onDismissRequest = { locationExpanded = false }
+                    ) {
+                        suggestions.forEach { feature ->
+                            val displayName = feature.properties.getDisplayName()
+                            DropdownMenuItem(
+                                text = { 
+                                    Column {
+                                        Text(feature.properties.name, fontWeight = FontWeight.Bold)
+                                        val sub = listOfNotNull(feature.properties.postcode, feature.properties.city).joinToString(" ")
+                                        if (sub.isNotBlank()) {
+                                            Text(sub, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    locationName = displayName
+                                    locationExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                thickness = DividerDefaults.Thickness,
-                color = DividerDefaults.color
-            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            
             Text("Critères de la meute", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
 
             Row(
@@ -190,63 +257,59 @@ fun NewActivity(
                 expanded = minDogSizeExpanded,
                 onExpandedChange = { minDogSizeExpanded = !minDogSizeExpanded }
             ) {
-            OutlinedTextField(
-                value = minDogSize,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Taille minimum") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = minDogSizeExpanded) },
-                modifier = Modifier.menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
-            )
-            ExposedDropdownMenu(
-                expanded = minDogSizeExpanded,
-                onDismissRequest = { minDogSizeExpanded = false }
-            ) {
-                dogSizes.forEach { selectionOption ->
-                    DropdownMenuItem(
-                        text = { Text(selectionOption) },
-                        onClick = {
-                            minDogSize = selectionOption
-                            minDogSizeExpanded = false
-                        }
-                    )
+                OutlinedTextField(
+                    value = minDogSize,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Taille minimum") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = minDogSizeExpanded) },
+                    modifier = Modifier.menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = minDogSizeExpanded,
+                    onDismissRequest = { minDogSizeExpanded = false }
+                ) {
+                    dogSizes.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                minDogSize = selectionOption
+                                minDogSizeExpanded = false
+                            }
+                        )
+                    }
                 }
-            }
             }
 
             ExposedDropdownMenuBox(
                 expanded = maxDogSizeExpanded,
                 onExpandedChange = { maxDogSizeExpanded = !maxDogSizeExpanded }
             ) {
-            OutlinedTextField(
-                value = maxDogSize,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Taille maximum") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = maxDogSizeExpanded) },
-                modifier = Modifier.menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
-            )
-            ExposedDropdownMenu(
-                expanded = maxDogSizeExpanded,
-                onDismissRequest = { maxDogSizeExpanded = false }
-            ) {
-                dogSizes.forEach { selectionOption ->
-                    DropdownMenuItem(
-                        text = { Text(selectionOption) },
-                        onClick = {
-                            maxDogSize = selectionOption
-                            maxDogSizeExpanded = false
-                        }
-                    )
+                OutlinedTextField(
+                    value = maxDogSize,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Taille maximum") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = maxDogSizeExpanded) },
+                    modifier = Modifier.menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = maxDogSizeExpanded,
+                    onDismissRequest = { maxDogSizeExpanded = false }
+                ) {
+                    dogSizes.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                maxDogSize = selectionOption
+                                maxDogSizeExpanded = false
+                            }
+                        )
+                    }
                 }
             }
-            }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                thickness = DividerDefaults.Thickness,
-                color = DividerDefaults.color
-            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             OutlinedTextField(
                 value = selectedDateDisplay,
@@ -262,55 +325,55 @@ fun NewActivity(
             )
 
             if (showDatePicker) {
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            if (millis < System.currentTimeMillis() - 86400000) {
-                                errorMessage = "La date ne peut pas être dans le passé."
-                            } else {
-                                errorMessage = null
-                                tempDateMillis = millis
-                                showDatePicker = false
-                                showTimePicker = true
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                if (millis < System.currentTimeMillis() - 86400000) {
+                                    errorMessage = "La date ne peut pas être dans le passé."
+                                } else {
+                                    errorMessage = null
+                                    tempDateMillis = millis
+                                    showDatePicker = false
+                                    showTimePicker = true
+                                }
                             }
-                        }
-                    }) { Text("Suivant") }
-                },
-                dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Annuler") } }
-            ) { DatePicker(state = datePickerState) }
+                        }) { Text("Suivant") }
+                    },
+                    dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Annuler") } }
+                ) { DatePicker(state = datePickerState) }
             }
 
             if (showTimePicker) {
-            AlertDialog(
-                onDismissRequest = { showTimePicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        tempDateMillis?.let { millis ->
-                            val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                            utcCal.timeInMillis = millis
-                            val localCal = Calendar.getInstance()
-                            localCal.set(utcCal.get(Calendar.YEAR), utcCal.get(Calendar.MONTH), utcCal.get(Calendar.DAY_OF_MONTH), timePickerState.hour, timePickerState.minute, 0)
+                AlertDialog(
+                    onDismissRequest = { showTimePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            tempDateMillis?.let { millis ->
+                                val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                                utcCal.timeInMillis = millis
+                                val localCal = Calendar.getInstance()
+                                localCal.set(utcCal.get(Calendar.YEAR), utcCal.get(Calendar.MONTH), utcCal.get(Calendar.DAY_OF_MONTH), timePickerState.hour, timePickerState.minute, 0)
 
-                            val displayFormatter = SimpleDateFormat("dd/MM/yyyy 'à' HH:mm", Locale.getDefault())
-                            selectedDateDisplay = displayFormatter.format(localCal.time)
-                            val apiFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:00.000'Z'", Locale.getDefault())
-                            apiFormatter.timeZone = TimeZone.getTimeZone("UTC")
-                            selectedDateApiFormat = apiFormatter.format(localCal.time)
+                                val displayFormatter = SimpleDateFormat("dd/MM/yyyy 'à' HH:mm", Locale.getDefault())
+                                selectedDateDisplay = displayFormatter.format(localCal.time)
+                                val apiFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:00.000'Z'", Locale.getDefault())
+                                apiFormatter.timeZone = TimeZone.getTimeZone("UTC")
+                                selectedDateApiFormat = apiFormatter.format(localCal.time)
+                            }
+                            showTimePicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("Annuler") } },
+                    text = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Sélectionnez l'heure", style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            TimePicker(state = timePickerState)
                         }
-                        showTimePicker = false
-                    }) { Text("OK") }
-                },
-                dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("Annuler") } },
-                text = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Sélectionnez l'heure", style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        TimePicker(state = timePickerState)
                     }
-                }
-            )
+                )
             }
 
             OutlinedTextField(
