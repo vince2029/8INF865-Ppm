@@ -7,12 +7,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,10 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
-import com.example.mpp.data.models.activity.ParticipantRequest
 import com.example.mpp.data.models.dog.DogModel
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -36,11 +41,11 @@ import java.util.Locale
 @Composable
 fun JoinActivityScreen(
     activityId: String,
-    navController: NavController
+    onBack: () -> Unit
 ) {
     ActivityScreen(
         activityId = activityId,
-        navController = navController
+        onBack = onBack
     )
 }
 
@@ -59,22 +64,19 @@ class ActivityViewModelFactory(
 
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun ActivityScreen(
     activityId: String,
-    navController: NavController,
+    onBack: () -> Unit,
     viewModel: ActivityViewModel = viewModel(
         factory = ActivityViewModelFactory(activityId)
     )
 ) {
     val activity = viewModel.activityState
-    if (activity == null) {
-        Text("Chargement...", modifier = Modifier.padding(16.dp))
-        return
-    }
 
     val currentUserId = API.currentUserId
-    val myRequest = activity.participantRequests.find { it.userId == currentUserId }
-    val isCreator = activity.creatorId == currentUserId
+    val myRequest = activity?.participantRequests?.find { it.userId == currentUserId }
+    val isCreator = activity?.creatorId == currentUserId
     val isPending = myRequest?.status == "PENDING"
     val isAccepted = myRequest?.status == "ACCEPTED"
     val isRejected = myRequest?.status == "REJECTED"
@@ -85,134 +87,166 @@ fun ActivityScreen(
     val acceptedUserDogs = viewModel.acceptedUserDogs
     val errorMessage = viewModel.errorMessage
     val invalidDog = viewModel.invalidDogMessage
+    val appBarTitle = if (activity == null) {
+        "Détail de l'activité"
+    } else {
+        "Détail - ${activity.title}"
+    }
 
-    Column(
-        modifier = Modifier
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
-        ActivityHeader(activity)
-        Spacer(Modifier.height(16.dp))
-        ActivityDetails(activity)
-        Spacer(Modifier.height(16.dp))
-
-        DogSection(
-            creatorUserDog = creatorUserDog,
-            acceptedUserDogs = acceptedUserDogs
-        )
-
-        Spacer(Modifier.height(24.dp))
-        when {
-            isCreator -> {
-                Column {
-                    Text(
-                        text = "Vous êtes le créateur de l'activité",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            viewModel.deleteActivity {
-                                navController.popBackStack()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) { Text("Supprimer l'activité") }
-
-                    errorMessage?.let {
-                        Text(
-                            text = it,
-                            color = Color.Red,
-                            modifier = Modifier.padding(top = 8.dp)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(appBarTitle) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Retour"
                         )
                     }
                 }
-            }
-            showAccepted -> {
-                Column {
-                    Text(
-                        text = "Vous participez déjà",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF4CAF50)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = { viewModel.leave() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) { Text("Quitter l'activité") }
+            )
+        }
+    ) { innerPadding ->
+        if (activity == null) {
+            Text(
+                "Chargement...",
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .padding(16.dp)
+            )
+            return@Scaffold
+        }
 
-                    errorMessage?.let {
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            ActivityHeader(activity)
+            Spacer(Modifier.height(16.dp))
+            ActivityDetails(activity)
+            Spacer(Modifier.height(16.dp))
+
+            DogSection(
+                creatorUserDog = creatorUserDog,
+                acceptedUserDogs = acceptedUserDogs
+            )
+
+            Spacer(Modifier.height(24.dp))
+            when {
+                isCreator -> {
+                    Column {
                         Text(
-                            text = it,
-                            color = Color.Red,
-                            modifier = Modifier.padding(top = 8.dp)
+                            text = "Vous êtes le créateur de l'activité",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Gray
                         )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                viewModel.deleteActivity {
+                                    onBack()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        ) { Text("Supprimer l'activité") }
+
+                        errorMessage?.let {
+                            Text(
+                                text = it,
+                                color = Color.Red,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
                 }
-            }
-            showPending -> {
-                Column {
-                    Text(
-                        text = "Demande en attente",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFFFFA000)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = { viewModel.cancelRequest(myRequest?.requestId ?: "") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) { Text("Annuler la demande") }
-
-                    errorMessage?.let {
+                showAccepted -> {
+                    Column {
                         Text(
-                            text = it,
-                            color = Color.Red,
-                            modifier = Modifier.padding(top = 8.dp)
+                            text = "Vous participez déjà",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF4CAF50)
                         )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = { viewModel.leave() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        ) { Text("Quitter l'activité") }
+
+                        errorMessage?.let {
+                            Text(
+                                text = it,
+                                color = Color.Red,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
                 }
-            }
-            showRejected -> {
-                Text(
-                    text = "Votre demande a été refusée",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Red
-                )
-            }
-            else -> {
-                Column {
-
-
-
-                    invalidDog?.let {
+                showPending -> {
+                    Column {
                         Text(
-                            text = it,
-                            color = Color.Red,
-                            modifier = Modifier.padding(top = 8.dp)
+                            text = "Demande en attente",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFFFFA000)
                         )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = { viewModel.cancelRequest(myRequest?.requestId ?: "") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        ) { Text("Annuler la demande") }
+
+                        errorMessage?.let {
+                            Text(
+                                text = it,
+                                color = Color.Red,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
+                }
+                showRejected -> {
+                    Text(
+                        text = "Votre demande a été refusée",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.Red
+                    )
+                }
+                else -> {
+                    Column {
 
-                    Button(
-                        onClick = { viewModel.join() },
-                        enabled = viewModel.canJoin,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Rejoindre l'activité")
+
+
+                        invalidDog?.let {
+                            Text(
+                                text = it,
+                                color = Color.Red,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = { viewModel.join() },
+                            enabled = viewModel.canJoin,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Rejoindre l'activité")
+                        }
+
+                        errorMessage?.let {
+                            Text(
+                                text = it,
+                                color = Color.Red,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+
+
                     }
-
-                    errorMessage?.let {
-                        Text(
-                            text = it,
-                            color = Color.Red,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-
-
                 }
             }
         }

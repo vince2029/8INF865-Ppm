@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
@@ -22,8 +23,8 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewActivity(
-    goToHome: () -> Unit,
-    goToActivityList: () -> Unit,
+    onClose: () -> Unit,
+    onCreated: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -48,74 +49,145 @@ fun NewActivity(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    var showDiscardChangesDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    val hasEdits by remember(
+        title,
+        description,
+        locationName,
+        maxParticipants,
+        selectedDateDisplay,
+        selectedDateApiFormat,
+        allowShyDogs,
+        energyRange,
+        minDogSize,
+        maxDogSize
     ) {
-        Text(
-            text = "Proposer une balade",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Titre de la balade") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3
-        )
-
-        OutlinedTextField(
-            value = locationName,
-            onValueChange = { locationName = it },
-            label = { Text("Lieu de la balade") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            thickness = DividerDefaults.Thickness,
-            color = DividerDefaults.color
-        )
-        Text("Critères de la meute", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Accepter les chiens timides ?")
-            Switch(checked = allowShyDogs, onCheckedChange = { allowShyDogs = it })
+        derivedStateOf {
+            title.isNotBlank() ||
+                description.isNotBlank() ||
+                locationName.isNotBlank() ||
+                maxParticipants.isNotBlank() ||
+                selectedDateDisplay.isNotBlank() ||
+                selectedDateApiFormat.isNotBlank() ||
+                !allowShyDogs ||
+                energyRange.start != 1f ||
+                energyRange.endInclusive != 5f ||
+                minDogSize != dogSizes.first() ||
+                maxDogSize != dogSizes.last()
         }
+    }
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text("Niveau d'énergie : de ${energyRange.start.toInt()} à ${energyRange.endInclusive.toInt()}")
-            RangeSlider(
-                value = energyRange,
-                onValueChange = { energyRange = it },
-                valueRange = 1f..5f,
-                steps = 3
+    if (showDiscardChangesDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardChangesDialog = false },
+            title = { Text("Êtes-vous sûr ?") },
+            text = { Text("Les modifications non enregistrées seront perdues.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardChangesDialog = false
+                    onClose()
+                }) {
+                    Text("Quitter")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardChangesDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Créer une activité") },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (hasEdits) {
+                            showDiscardChangesDialog = true
+                        } else {
+                            onClose()
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Fermer"
+                        )
+                    }
+                }
             )
         }
-
-        ExposedDropdownMenuBox(
-            expanded = minDogSizeExpanded,
-            onExpandedChange = { minDogSizeExpanded = !minDogSizeExpanded }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(24.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Text(
+                text = "Proposer une balade",
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Titre de la balade") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+
+            OutlinedTextField(
+                value = locationName,
+                onValueChange = { locationName = it },
+                label = { Text("Lieu de la balade") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+            Text("Critères de la meute", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Accepter les chiens timides ?")
+                Switch(checked = allowShyDogs, onCheckedChange = { allowShyDogs = it })
+            }
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Niveau d'énergie : de ${energyRange.start.toInt()} à ${energyRange.endInclusive.toInt()}")
+                RangeSlider(
+                    value = energyRange,
+                    onValueChange = { energyRange = it },
+                    valueRange = 1f..5f,
+                    steps = 3
+                )
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = minDogSizeExpanded,
+                onExpandedChange = { minDogSizeExpanded = !minDogSizeExpanded }
+            ) {
             OutlinedTextField(
                 value = minDogSize,
                 onValueChange = {},
@@ -138,12 +210,12 @@ fun NewActivity(
                     )
                 }
             }
-        }
+            }
 
-        ExposedDropdownMenuBox(
-            expanded = maxDogSizeExpanded,
-            onExpandedChange = { maxDogSizeExpanded = !maxDogSizeExpanded }
-        ) {
+            ExposedDropdownMenuBox(
+                expanded = maxDogSizeExpanded,
+                onExpandedChange = { maxDogSizeExpanded = !maxDogSizeExpanded }
+            ) {
             OutlinedTextField(
                 value = maxDogSize,
                 onValueChange = {},
@@ -166,28 +238,28 @@ fun NewActivity(
                     )
                 }
             }
-        }
-
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            thickness = DividerDefaults.Thickness,
-            color = DividerDefaults.color
-        )
-
-        OutlinedTextField(
-            value = selectedDateDisplay,
-            onValueChange = { },
-            label = { Text("Date et Heure") },
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true,
-            trailingIcon = {
-                IconButton(onClick = { showDatePicker = true }) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Choisir une date")
-                }
             }
-        )
 
-        if (showDatePicker) {
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+
+            OutlinedTextField(
+                value = selectedDateDisplay,
+                onValueChange = { },
+                label = { Text("Date et Heure") },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Choisir une date")
+                    }
+                }
+            )
+
+            if (showDatePicker) {
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
                 confirmButton = {
@@ -206,9 +278,9 @@ fun NewActivity(
                 },
                 dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Annuler") } }
             ) { DatePicker(state = datePickerState) }
-        }
+            }
 
-        if (showTimePicker) {
+            if (showTimePicker) {
             AlertDialog(
                 onDismissRequest = { showTimePicker = false },
                 confirmButton = {
@@ -237,80 +309,73 @@ fun NewActivity(
                     }
                 }
             )
-        }
-
-        OutlinedTextField(
-            value = maxParticipants,
-            onValueChange = { maxParticipants = it },
-            label = { Text("Nombre de participants max") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true
-        )
-
-        errorMessage?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error)
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = {
-                if (title.isBlank() || locationName.isBlank() || selectedDateApiFormat.isBlank() || maxParticipants.isBlank()) {
-                    errorMessage = "Veuillez remplir tous les champs obligatoires."
-                    return@Button
-                }
-
-                val participantsInt = maxParticipants.toIntOrNull()
-                if (participantsInt == null || participantsInt <= 0) {
-                    errorMessage = "Le nombre de participants doit être un nombre valide."
-                    return@Button
-                }
-
-                isLoading = true
-                errorMessage = null
-
-                coroutineScope.launch {
-                    val success = API.createActivity(
-                        title = title,
-                        description = description,
-                        locationName = locationName,
-                        dateTime = selectedDateApiFormat,
-                        maxParticipants = participantsInt,
-                        minEnergyLevel = energyRange.start.toInt(),
-                        maxEnergyLevel = energyRange.endInclusive.toInt(),
-                        allowShyDogs = allowShyDogs,
-                        minDogSize = minDogSize,
-                        maxDogSize = maxDogSize
-                    )
-
-                    isLoading = false
-
-                    if (success) {
-                        goToActivityList()
-                    } else {
-                        errorMessage = "Erreur lors de la création de la balade."
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text("Créer l'événement")
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = maxParticipants,
+                onValueChange = { maxParticipants = it },
+                label = { Text("Nombre de participants max") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
+            )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            TextButton(onClick = goToHome) { Text("Retour à l'accueil") }
-            TextButton(onClick = goToActivityList) { Text("Voir les activités") }
+            errorMessage?.let {
+                Text(text = it, color = MaterialTheme.colorScheme.error)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    if (title.isBlank() || locationName.isBlank() || selectedDateApiFormat.isBlank() || maxParticipants.isBlank()) {
+                        errorMessage = "Veuillez remplir tous les champs obligatoires."
+                        return@Button
+                    }
+
+                    val participantsInt = maxParticipants.toIntOrNull()
+                    if (participantsInt == null || participantsInt <= 0) {
+                        errorMessage = "Le nombre de participants doit être un nombre valide."
+                        return@Button
+                    }
+
+                    isLoading = true
+                    errorMessage = null
+
+                    coroutineScope.launch {
+                        val success = API.createActivity(
+                            title = title,
+                            description = description,
+                            locationName = locationName,
+                            dateTime = selectedDateApiFormat,
+                            maxParticipants = participantsInt,
+                            minEnergyLevel = energyRange.start.toInt(),
+                            maxEnergyLevel = energyRange.endInclusive.toInt(),
+                            allowShyDogs = allowShyDogs,
+                            minDogSize = minDogSize,
+                            maxDogSize = maxDogSize
+                        )
+
+                        isLoading = false
+
+                        if (success) {
+                            onCreated()
+                        } else {
+                            errorMessage = "Erreur lors de la création de la balade."
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Créer l'événement")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -319,7 +384,7 @@ fun NewActivity(
 @Composable
 fun NewActivityPreview() {
     NewActivity(
-        goToHome = {},
-        goToActivityList = {}
+        onClose = {},
+        onCreated = {}
     )
 }

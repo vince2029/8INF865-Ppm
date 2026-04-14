@@ -160,8 +160,12 @@ class MainActivity : ComponentActivity() {
 
                 composable<NewActivity> {
                     NewActivity(
-                        goToHome = { navController.navigate(Home) },
-                        goToActivityList = { navController.navigate(ActivityList) },
+                        onClose = { navController.popBackStack() },
+                        onCreated = {
+                            navController.navigate(ActivityList) {
+                                popUpTo(NewActivity) { inclusive = true }
+                            }
+                        },
                     )
                 }
 
@@ -169,7 +173,7 @@ class MainActivity : ComponentActivity() {
                     val activityArgs = backStackEntry.toRoute<JoinActivity>()
                     JoinActivityScreen(
                         activityId = activityArgs.Id,
-                        navController = navController,
+                        onBack = { navController.popBackStack() },
                     )
                 }
 
@@ -198,8 +202,18 @@ class MainActivity : ComponentActivity() {
             }
 
             val currentPage = navController.currentBackStackEntryAsState().value?.destination?.route
-            val pagesWithoutBars = listOf(Login::class.qualifiedName, Register::class.qualifiedName, NewDog::class.qualifiedName)
-            val pagesWithArrow = listOf(JoinActivity::class.qualifiedName, Register::class.qualifiedName)
+            val pagesWithoutBars = listOf(
+                Login::class.qualifiedName,
+                Register::class.qualifiedName,
+                NewDog::class.qualifiedName,
+                JoinActivity::class.qualifiedName,
+                NewActivity::class.qualifiedName
+            )
+            val pagesWithArrow = emptyList<String?>()
+
+            val hideGlobalBars = pagesWithoutBars.any { prefix ->
+                prefix?.let { currentPage?.startsWith(it) == true } == true
+            }
 
             val showArrow = pagesWithArrow.any { prefix -> prefix?.let { currentPage?.startsWith(it) == true } == true }
 
@@ -210,7 +224,7 @@ class MainActivity : ComponentActivity() {
                     }
                 },
                 bottomBar = {
-                    if (currentPage !in pagesWithoutBars) {
+                    if (!hideGlobalBars) {
                         BottomNavigationBar(navController)
                     }
                 }
