@@ -6,6 +6,8 @@ import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.dog.NewDogModel
+import com.example.mpp.data.models.gamification.GamificationSummaryModel
+import com.example.mpp.data.models.gamification.RewardModel
 import com.example.mpp.data.models.notification.NotificationModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import com.example.mpp.data.models.participations.ParticipationDecisionPayload
@@ -243,6 +245,34 @@ object API {
             RetrofitClient.service.deleteActivity(activityId).isSuccessful
         } catch (e: Exception) {
             false
+        }
+    }
+
+    suspend fun getGamificationSummary(): GamificationSummaryModel? {
+        return try {
+            val response = RetrofitClient.service.getGamificationSummary()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun getRewards(): List<RewardModel>? {
+        return try {
+            val response = RetrofitClient.service.getRewards()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 

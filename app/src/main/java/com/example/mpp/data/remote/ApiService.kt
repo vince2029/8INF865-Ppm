@@ -6,6 +6,8 @@ import com.example.mpp.data.models.auth.LoginResponse
 import com.example.mpp.data.models.auth.RegisterRequest
 import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.dog.NewDogModel
+import com.example.mpp.data.models.gamification.GamificationSummaryModel
+import com.example.mpp.data.models.gamification.RewardModel
 import com.example.mpp.data.models.notification.NotificationModel
 import com.example.mpp.data.models.participations.ParticipantModel
 import com.example.mpp.data.models.participations.ParticipationDecisionPayload
@@ -98,5 +100,11 @@ interface ApiService {
     suspend fun deleteActivity(
         @Path("activity_id") activityId: String
     ): Response<Unit>
+
+    @GET("gamification/summary")
+    suspend fun getGamificationSummary(): Response<GamificationSummaryModel>
+
+    @GET("gamification/rewards")
+    suspend fun getRewards(): Response<List<RewardModel>>
 
 }

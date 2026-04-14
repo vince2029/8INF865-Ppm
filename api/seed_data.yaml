@@ -179,3 +179,23 @@ activities:
         status: "PENDING"
       - email: "maxime@email.com"
         status: "ACCEPTED"
+
+rewards:
+  - partner_name: "CaniStore"
+    title: "-10% sur accessoires"
+    description: "Valable sur harnais, laisses et jouets."
+    points_cost: 60
+    discount_label: "10%"
+    is_active: true
+  - partner_name: "Pattes & Friandises"
+    title: "1 sachet de friandises offert"
+    description: "Pour tout achat en boutique partenaire."
+    points_cost: 120
+    discount_label: "Cadeau"
+    is_active: true
+  - partner_name: "Toilettage Toutou Zen"
+    title: "-20% sur une séance"
+    description: "Réduction sur une prestation de toilettage."
+    points_cost: 180
+    discount_label: "20%"
+    is_active: true

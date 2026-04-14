@@ -73,6 +73,9 @@ object ActivityList
 object Notifications
 
 @Serializable
+object Rewards
+
+@Serializable
 data class ChatsSpecific(val Id: String)
 
 @Serializable
@@ -131,8 +134,13 @@ class MainActivity : ComponentActivity() {
                             navController.navigate(JoinActivity(activityId)
                             )
                         },
+                        goToRewards = { navController.navigate(Rewards) },
 
                     )
+                }
+
+                composable<Rewards> {
+                    RewardsScreen(onBack = { navController.popBackStack() })
                 }
 
                 composable<Profile> {
@@ -219,7 +227,8 @@ class MainActivity : ComponentActivity() {
                 Register::class.qualifiedName,
                 NewDog::class.qualifiedName,
                 JoinActivity::class.qualifiedName,
-                NewActivity::class.qualifiedName
+                NewActivity::class.qualifiedName,
+                Rewards::class.qualifiedName,
             )
             val pagesWithArrow = emptyList<String?>()
 

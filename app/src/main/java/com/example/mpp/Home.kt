@@ -2,20 +2,29 @@ package com.example.mpp
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Attractions
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,19 +35,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.dog.DogModel
+import com.example.mpp.data.models.gamification.GamificationSummaryModel
 
 @Composable
 fun Home(
     goToNewActivity: () -> Unit,
     goToJoinActivity: (String) -> Unit,
+    goToRewards: () -> Unit,
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var activities by remember { mutableStateOf<List<ActivityModel>>(emptyList()) }
     var current_dog by remember { mutableStateOf<DogModel?>(null) }
+    var gamificationSummary by remember { mutableStateOf<GamificationSummaryModel?>(null) }
 
     LaunchedEffect(Unit) {
         val Aresult = API.getActivities()
@@ -52,6 +65,8 @@ fun Home(
                 current_dog = Dresult
             }
         }
+
+        gamificationSummary = API.getGamificationSummary()
         isLoading = false
     }
 
@@ -74,7 +89,29 @@ fun Home(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)
         ) {
             item {
-                Text(text = "Activités susceptibles de vous plaire")
+                ChallengesSection(
+                    summary = gamificationSummary,
+                    onRewardsClick = goToRewards,
+                )
+                Spacer(Modifier.height(24.dp))
+            }
+
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Attractions,
+                        contentDescription = "Activites recommandées",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "Activités recommandées",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
             }
 
@@ -118,6 +155,89 @@ fun Home(
                         Spacer(Modifier.height(16.dp))
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChallengesSection(
+    summary: GamificationSummaryModel?,
+    onRewardsClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Default.EmojiEvents,
+            contentDescription = "Defis",
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "Défis",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = "Solde: ${summary?.pointsBalance ?: 0} points",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val monthlyProgress = summary?.monthlyProgressRatio ?: 0f
+                Box(contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        progress = { monthlyProgress.coerceIn(0f, 1f) },
+                        modifier = Modifier.size(72.dp),
+                        strokeWidth = 8.dp,
+                    )
+                    Text(
+                        text = "${(monthlyProgress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = summary?.monthlyMessage ?: "0/5 balades ce mois-ci. Continuez comme ca !",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LinearProgressIndicator(
+                    progress = { (summary?.rewardProgressRatio ?: 0f).coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = summary?.nextRewardMessage ?: "3 balade(s) avant la prochaine recompense",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            Button(
+                onClick = onRewardsClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Mes récompenses")
             }
         }
     }

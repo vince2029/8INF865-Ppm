@@ -13,6 +13,7 @@ from .models import (
     Participation,
     ParticipationRequest,
     Notification,
+    PartnerReward,
     NotificationType,
     ParticipationStatus,
     Role,
@@ -29,7 +30,7 @@ DB_RETRY_DELAY_SECONDS = float(os.getenv("DB_RETRY_DELAY_SECONDS", "2"))
 
 def _load_seed_data() -> dict:
     if not SEED_FILE_PATH.exists():
-        return {"users": [], "dogs": [], "activities": []}
+        return {"users": [], "dogs": [], "activities": [], "rewards": []}
 
     with SEED_FILE_PATH.open("r", encoding="utf-8") as seed_file:
         data = yaml.safe_load(seed_file) or {}
@@ -38,6 +39,7 @@ def _load_seed_data() -> dict:
         "users": data.get("users", []),
         "dogs": data.get("dogs", []),
         "activities": data.get("activities", []),
+        "rewards": data.get("rewards", []),
     }
 
 
@@ -216,6 +218,17 @@ def init_db():
                             related_request_id=participation_request.id,
                         )
                     )
+
+        for reward_data in seed_data["rewards"]:
+            reward = PartnerReward(
+                partner_name=reward_data["partner_name"],
+                title=reward_data["title"],
+                description=reward_data["description"],
+                points_cost=reward_data["points_cost"],
+                discount_label=reward_data["discount_label"],
+                is_active=reward_data.get("is_active", True),
+            )
+            session.add(reward)
 
         session.commit()
 

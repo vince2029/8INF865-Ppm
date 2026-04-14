@@ -92,3 +92,13 @@ class Notification(SQLModel, table=True):
     related_request_id: Optional[UUID] = Field(default=None, foreign_key="participationrequest.id")
     is_read: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PartnerReward(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    partner_name: str
+    title: str
+    description: str
+    points_cost: int = Field(default=100, ge=1)
+    discount_label: str
+    is_active: bool = Field(default=True)

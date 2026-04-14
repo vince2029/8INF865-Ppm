@@ -18,6 +18,7 @@ from ..models import (
 )
 
 router = APIRouter()
+POINTS_PER_ACCEPTED_ACTIVITY = 20
 
 class ParticipationRequestResponse(BaseModel):
     status: str
@@ -183,6 +184,11 @@ def decide_participation_request(
                     status=ParticipationStatus.ACCEPTED,
                 )
             )
+
+            requester_user = session.get(User, request.user_id)
+            if requester_user:
+                requester_user.points_balance += POINTS_PER_ACCEPTED_ACTIVITY
+                session.add(requester_user)
 
         request.status = ParticipationStatus.ACCEPTED
         decision_text = "acceptee"
