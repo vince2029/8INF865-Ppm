@@ -150,14 +150,14 @@ def decide_participation_request(
     current_user_id: str = Depends(get_current_user_id),
     session: Session = Depends(get_session),
 ):
-        """
-        Traite une demande de participation.
+    """
+    Traite une demande de participation.
 
-        Règle de points:
-        - Si la demande est ACCEPTED et qu'aucune participation n'existe encore,
-            on crée la participation et on crédite le demandeur de +20 points.
-        - Si une participation existe déjà, aucun point supplémentaire n'est ajouté.
-        """
+    Règle de points:
+    - Si la demande est ACCEPTED et qu'aucune participation n'existe encore,
+      on crée la participation et on crédite le demandeur de +20 points.
+    - Si une participation existe déjà, aucun point supplémentaire n'est ajouté.
+    """
     creator_id = UUID(current_user_id)
 
     request = session.get(ParticipationRequest, request_id)
