@@ -11,8 +11,11 @@ from ..models import Activity, PartnerReward, Participation, ParticipationStatus
 
 router = APIRouter()
 
+# Objectif mensuel de balades (créées + participations acceptées).
 MONTHLY_ACTIVITY_GOAL = 5
+# Une récompense de progression est atteinte tous les 3 participations acceptées.
 REWARD_ACTIVITY_STEP = 3
+# Gain de points crédité lors d'une demande ACCEPTED.
 POINTS_PER_ACCEPTED_ACTIVITY = 20
 
 
@@ -28,6 +31,9 @@ class GamificationSummaryResponse(BaseModel):
     remaining_activities_for_next_reward: int
     next_reward_message: str
     points_per_accepted_activity: int
+    points_balance_formula: str
+    monthly_progress_formula: str
+    next_reward_formula: str
 
 
 class RewardItemResponse(BaseModel):
@@ -46,6 +52,14 @@ def get_gamification_summary(
     current_user_id: str = Depends(get_current_user_id),
     session: Session = Depends(get_session),
 ):
+    """
+    Résumé gamification utilisateur.
+
+    Le calcul suit ces règles:
+    - Solde de points: cumul des gains (+20) à chaque participation acceptée.
+    - Progression mensuelle: activités créées CE mois + participations acceptées CE mois.
+    - Prochaine récompense: progression cyclique sur un palier de 3 participations acceptées.
+    """
     user_id = UUID(current_user_id)
     user = session.get(User, user_id)
     if not user:
@@ -104,13 +118,16 @@ def get_gamification_summary(
         "monthly_activity_count": monthly_count,
         "monthly_activity_goal": MONTHLY_ACTIVITY_GOAL,
         "monthly_progress_ratio": monthly_ratio,
-        "monthly_message": f"{monthly_count}/{MONTHLY_ACTIVITY_GOAL} balades ce mois-ci. Continuez comme ca !",
+        "monthly_message": f"{monthly_count}/{MONTHLY_ACTIVITY_GOAL} balades ce mois-ci. Continuez comme ça !",
         "reward_progress_count": reward_cycle_progress,
         "reward_progress_goal": REWARD_ACTIVITY_STEP,
         "reward_progress_ratio": reward_ratio,
         "remaining_activities_for_next_reward": remaining_for_next_reward,
-        "next_reward_message": f"{remaining_for_next_reward} balade(s) avant la prochaine recompense",
+        "next_reward_message": f"{remaining_for_next_reward} balade(s) avant la prochaine récompense",
         "points_per_accepted_activity": POINTS_PER_ACCEPTED_ACTIVITY,
+        "points_balance_formula": f"Solde actuel = somme des gains de participations acceptées ({POINTS_PER_ACCEPTED_ACTIVITY} points par participation acceptée).",
+        "monthly_progress_formula": f"Progression mensuelle = activités créées ce mois + participations acceptées ce mois, sur un objectif de {MONTHLY_ACTIVITY_GOAL}.",
+        "next_reward_formula": f"Prochaine récompense de progression toutes les {REWARD_ACTIVITY_STEP} participations acceptées (compteur cyclique).",
     }
 
 
@@ -119,6 +136,7 @@ def get_rewards(
     current_user_id: str = Depends(get_current_user_id),
     session: Session = Depends(get_session),
 ):
+    """Liste des récompenses partenaires et état de déblocage par utilisateur."""
     user_id = UUID(current_user_id)
     user = session.get(User, user_id)
     if not user:

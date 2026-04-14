@@ -18,13 +18,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Attractions
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -160,14 +164,17 @@ fun Home(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChallengesSection(
     summary: GamificationSummaryModel?,
     onRewardsClick: () -> Unit,
 ) {
+    var showHelpSheet by remember { mutableStateOf(false) }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Icon(
             imageVector = Icons.Default.EmojiEvents,
@@ -179,6 +186,12 @@ private fun ChallengesSection(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
+        IconButton(onClick = { showHelpSheet = true }) {
+            Icon(
+                imageVector = Icons.Default.HelpOutline,
+                contentDescription = "Aide calcul des points",
+            )
+        }
     }
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -238,6 +251,27 @@ private fun ChallengesSection(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Mes récompenses")
+            }
+        }
+    }
+
+    if (showHelpSheet) {
+        ModalBottomSheet(onDismissRequest = { showHelpSheet = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = "Comment sont calculés mes points ?",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(summary?.pointsBalanceFormula ?: "Solde actuel = cumul des points gagnés lors des participations acceptées.")
+                Text(summary?.monthlyProgressFormula ?: "Progression mensuelle = activités créées ce mois + participations acceptées ce mois.")
+                Text(summary?.nextRewardFormula ?: "Prochaine récompense de progression atteinte toutes les 3 participations acceptées.")
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

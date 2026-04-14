@@ -35,4 +35,13 @@ data class GamificationSummaryModel(
 
     @SerializedName("points_per_accepted_activity")
     val pointsPerAcceptedActivity: Int,
+
+    @SerializedName("points_balance_formula")
+    val pointsBalanceFormula: String,
+
+    @SerializedName("monthly_progress_formula")
+    val monthlyProgressFormula: String,
+
+    @SerializedName("next_reward_formula")
+    val nextRewardFormula: String,
 )
