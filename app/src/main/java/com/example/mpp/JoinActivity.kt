@@ -26,6 +26,11 @@ import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.ParticipantRequest
 import com.example.mpp.data.models.dog.DogModel
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
 @Composable
@@ -289,7 +294,7 @@ fun ActivityHeader(activity: ActivityModel) {
         Spacer(Modifier.height(2.dp))
 
         Text(
-            text = activity.dateTime,
+            text = formatDateTime(activity.dateTime),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray
         )
@@ -348,133 +353,33 @@ fun InfoRow(
     }
 }
 
-private val previewRequests = listOf(
-    ParticipantRequest(
-        pseudo = "Alice",
-        status = "pending",
-        userId = "u1",
-        requestId = "r1"
-    ),
-    ParticipantRequest(
-        pseudo = "Bob",
-        status = "accepted",
-        userId = "u2",
-        requestId = "r2"
-    )
-)
+private fun formatDateTime(dateString: String): String {
+    val outputFormatter = DateTimeFormatter.ofPattern("d MMMM 'à' HH'h'mm", Locale.FRENCH)
 
-private val previewActivity = ActivityModel(
-    activityId = "123",
-    creatorId = "creator_001",
-    creatorPseudo = "Vincent",
-    title = "Randonnée au parc",
-    description = "Une belle marche tranquille avec nos chiens.",
-    locationName = "Parc de la Rivière-du-Moulin",
-    dateTime = "12 avril 2025 - 14h00",
-    maxParticipants = 8,
-    minEnergyLevel = 1,
-    maxEnergyLevel = 4,
-    allowShyDogs = true,
-    minDogSize = "Petit",
-    maxDogSize = "Grand",
-    participantCount = 3,
-    participantRequests = previewRequests
-)
-
-
-@Preview(showBackground = true)
-@Composable
-fun ActivityHeaderPreview() {
-    MaterialTheme {
-        ActivityHeader(activity = previewActivity)
+    val parsedDate = runCatching {
+        ZonedDateTime.parse(dateString)
+            .withZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ActivityDetailsPreviews() {
-    MaterialTheme {
-        ActivityDetails(activity = previewActivity)
+    .recoverCatching {
+        LocalDateTime.parse(dateString)
+            .atZone(ZoneId.of("UTC"))
+            .withZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun InfoRowPreview() {
-    MaterialTheme {
-        InfoRow(
-            label = "Description",
-            value = "Une belle activité en plein air"
-        )
+    .recoverCatching {
+        LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+            .atZone(ZoneId.of("UTC"))
+            .withZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
     }
+    .getOrNull()
+
+    return parsedDate?.format(outputFormatter) ?: dateString
 }
 
 @Preview(showBackground = true)
 @Composable
 fun JoinActivityPreview() {
-    JoinActivity(
-        Id = "456",
-    )
+    // Note: Mock context for preview
 }
-
-private val previewDog = DogModel(
-    id = "dog_001",
-    name = "Rex",
-    age = 4,
-    size = "Moyen",
-    energyLevel = 3,
-    isShy = false,
-    ownerId = "owner_123"
-)
-
-private val previewCreatorUserDog = UserDog(
-    userName = "Vincent",
-    dog = previewDog
-)
-
-private val previewAcceptedDogs = listOf(
-    UserDog(
-        userName = "Alice",
-        dog = DogModel(
-            id = "dog_002",
-            name = "Bella",
-            age = 2,
-            size = "Petit",
-            energyLevel = 2,
-            isShy = true,
-            ownerId = "owner_456"
-        )
-    ),
-    UserDog(
-        userName = "Marc",
-        dog = DogModel(
-            id = "dog_003",
-            name = "Thor",
-            age = 6,
-            size = "Grand",
-            energyLevel = 4,
-            isShy = false,
-            ownerId = "owner_789"
-        )
-    )
-)
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewDogCard() {
-    MaterialTheme {
-        DogCard(dog = previewDog)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewDogSection() {
-    MaterialTheme {
-        DogSection(
-            creatorUserDog = previewCreatorUserDog,
-            acceptedUserDogs = previewAcceptedDogs
-        )
-    }
-}
-
