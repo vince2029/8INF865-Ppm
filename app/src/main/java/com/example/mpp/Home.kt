@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.mpp.data.API
 import com.example.mpp.data.models.activity.ActivityModel
+import com.example.mpp.data.models.dog.DogModel
 
 @Composable
 fun Home(
@@ -36,11 +37,19 @@ fun Home(
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var activities by remember { mutableStateOf<List<ActivityModel>>(emptyList()) }
+    var current_dog by remember { mutableStateOf<DogModel?>(null) }
 
     LaunchedEffect(Unit) {
-        val result = API.getActivities()
-        if (result != null) {
-            activities = result
+        val Aresult = API.getActivities()
+        if (Aresult != null) {
+            activities = Aresult
+        }
+        val userId = API.currentUserId
+        if (userId != null) {
+            val Dresult = API.getDog(userId)
+            if (Dresult != null) {
+                current_dog = Dresult
+            }
         }
         isLoading = false
     }
@@ -102,8 +111,13 @@ fun Home(
                 }
 
                 else -> {
-                    items(activities) { activity ->
-                        ActivityListItem(activity = activity) {
+                    val filteredActivities =
+                        if (current_dog != null)
+                            activities.filter { dogRespectsActivity(current_dog!!, it) }
+                        else
+                            activities
+                    items(filteredActivities) { activity ->
+                    ActivityListItem(activity = activity) {
                             goToJoinActivity(activity.activityId)
                         }
                         Spacer(Modifier.height(16.dp))
@@ -113,6 +127,26 @@ fun Home(
         }
     }
 }
+
+fun dogRespectsActivity(dog: DogModel, activity: ActivityModel): Boolean {
+
+    if (dog.energyLevel < activity.minEnergyLevel) return false
+    if (dog.energyLevel > activity.maxEnergyLevel) return false
+
+    if (!activity.allowShyDogs && dog.isShy) return false
+
+    val sizes = listOf("PETIT", "MOYEN", "GRAND")
+
+    val dogIndex = sizes.indexOf(dog.size.uppercase())
+    val minIndex = sizes.indexOf(activity.minDogSize.uppercase())
+    val maxIndex = sizes.indexOf(activity.maxDogSize.uppercase())
+
+    if (dogIndex == -1 || minIndex == -1 || maxIndex == -1) return false
+    if (dogIndex < minIndex || dogIndex > maxIndex) return false
+
+    return true
+}
+
 
 
 
