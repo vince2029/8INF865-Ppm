@@ -6,7 +6,7 @@ from uuid import UUID
 
 from ..database import get_session
 from ..models import User, Role
-from ..core.security import hash_password, verify_password, create_access_token
+from ..core.security import hash_password, verify_password, create_access_token, get_current_user_id
 
 router = APIRouter()
 
@@ -31,6 +31,11 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     user_id: str
+
+
+class UserUpdatePayload(BaseModel):
+    email: EmailStr
+    pseudo: str
 
 # --- Routes ---
 
@@ -104,3 +109,56 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
         "token_type": "bearer",
         "user_id": str(user.id)
     }
+
+
+@router.get("/me", response_model=UserResponse)
+def get_current_user_profile(
+    current_user_id: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    user = session.get(User, UUID(current_user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    return user
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_current_user_profile(
+    payload: UserUpdatePayload,
+    current_user_id: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    user_id = UUID(current_user_id)
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+    pseudo = payload.pseudo.strip()
+    if not pseudo:
+        raise HTTPException(status_code=400, detail="Le pseudo est requis")
+
+    existing_email = session.exec(
+        select(User).where(
+            User.email == payload.email,
+            User.id != user_id,
+        )
+    ).first()
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Cet email est déjà enregistré.")
+
+    existing_pseudo = session.exec(
+        select(User).where(
+            User.pseudo == pseudo,
+            User.id != user_id,
+        )
+    ).first()
+    if existing_pseudo:
+        raise HTTPException(status_code=400, detail="Ce pseudo est déjà utilisé.")
+
+    user.email = payload.email
+    user.pseudo = pseudo
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user

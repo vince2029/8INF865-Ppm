@@ -4,6 +4,8 @@ import com.example.mpp.Taille
 import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.RegisterRequest
+import com.example.mpp.data.models.auth.UpdateUserProfileRequest
+import com.example.mpp.data.models.auth.UserProfileModel
 import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.dog.NewDogModel
 import com.example.mpp.data.models.gamification.GamificationSummaryModel
@@ -265,6 +267,39 @@ object API {
     suspend fun getRewards(): List<RewardModel>? {
         return try {
             val response = RetrofitClient.service.getRewards()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun getCurrentUserProfile(): UserProfileModel? {
+        return try {
+            val response = RetrofitClient.service.getCurrentUserProfile()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun updateCurrentUserProfile(email: String, pseudo: String): UserProfileModel? {
+        return try {
+            val response = RetrofitClient.service.updateCurrentUserProfile(
+                UpdateUserProfileRequest(
+                    email = email,
+                    pseudo = pseudo,
+                )
+            )
             if (response.isSuccessful && response.body() != null) {
                 response.body()!!
             } else {

@@ -4,6 +4,8 @@ import com.example.mpp.data.models.activity.ActivityModel
 import com.example.mpp.data.models.activity.CreateActivityModel
 import com.example.mpp.data.models.auth.LoginResponse
 import com.example.mpp.data.models.auth.RegisterRequest
+import com.example.mpp.data.models.auth.UpdateUserProfileRequest
+import com.example.mpp.data.models.auth.UserProfileModel
 import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.dog.NewDogModel
 import com.example.mpp.data.models.gamification.GamificationSummaryModel
@@ -36,6 +38,14 @@ interface ApiService {
     suspend fun register(
         @Body request: RegisterRequest
     ): Response<LoginResponse>
+
+    @GET("auth/me")
+    suspend fun getCurrentUserProfile(): Response<UserProfileModel>
+
+    @PATCH("auth/me")
+    suspend fun updateCurrentUserProfile(
+        @Body request: UpdateUserProfileRequest
+    ): Response<UserProfileModel>
 
     @GET("activity/list")
     suspend fun getActivities(): Response<List<ActivityModel>>
