@@ -17,7 +17,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -47,6 +46,14 @@ fun NewDog(goToHome: () -> Unit){
     var niveauEnergie by remember { mutableStateOf(3) }
     var estTimide by remember { mutableStateOf(false) }
     var tailleMenuExpanded by remember { mutableStateOf(false) }
+    val errorMessage =
+        when {
+            nom.isBlank() -> "Veuillez entrer un nom."
+            age <= 0 -> "Veuillez entrer un âge valide."
+            age >= 20 -> "L'âge maximum permis est 20 ans."
+            else -> null
+        }
+
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -141,7 +148,14 @@ fun NewDog(goToHome: () -> Unit){
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Boutons
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -160,7 +174,7 @@ fun NewDog(goToHome: () -> Unit){
                     }
                 },
                 modifier = Modifier.weight(1f),
-                enabled = nom.isNotBlank() && 0 < age && age < 6
+                enabled = nom.isNotBlank() && 0 < age && age < 20
             ) {
                 Text("Enregistrer")
             }
