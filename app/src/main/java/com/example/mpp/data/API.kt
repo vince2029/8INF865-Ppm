@@ -8,6 +8,7 @@ import com.example.mpp.data.models.auth.UpdateUserProfileRequest
 import com.example.mpp.data.models.auth.UserProfileModel
 import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.dog.NewDogModel
+import com.example.mpp.data.models.dog.UpdateDogModel
 import com.example.mpp.data.models.gamification.GamificationSummaryModel
 import com.example.mpp.data.models.gamification.RewardModel
 import com.example.mpp.data.models.notification.NotificationModel
@@ -116,6 +117,24 @@ object API {
             val response = RetrofitClient.service.createNewDog(currentUserId?: "", requestBody)
             response.isSuccessful
             true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun updateDog(name: String, age: Int, size: Taille, energyLevel: Int, isShy: Boolean): Boolean {
+        return try {
+            val ownerId = currentUserId ?: return false
+            val requestBody = UpdateDogModel(
+                name = name,
+                age = age,
+                size = size,
+                energyLevel = energyLevel,
+                isShy = isShy,
+            )
+            val response = RetrofitClient.service.updateDog(ownerId, requestBody)
+            response.isSuccessful
         } catch (e: Exception) {
             e.printStackTrace()
             false

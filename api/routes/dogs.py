@@ -21,6 +21,14 @@ class dogCreate(BaseModel):
     owner_id: UUID
 
 
+class dogUpdate(BaseModel):
+    name: str
+    age: int
+    size: Size
+    energy_level: int
+    is_shy: bool
+
+
 class dogInfo(BaseModel):
     id: UUID
     name: str
@@ -66,3 +74,27 @@ def create_dog(
     session.commit()
     session.refresh(newDog)
     return newDog
+
+
+@router.patch("/{owner_id}", response_model=dogInfo)
+def update_dog(
+    owner_id: UUID,
+    dog: dogUpdate,
+    _: str = Depends(get_current_user_id),
+    session: Session = Depends(get_session),
+):
+    existing_dog = session.exec(select(Dog).where(Dog.owner_id == owner_id)).first()
+
+    if not existing_dog:
+        raise HTTPException(status_code=404, detail="Aucun chien trouvé pour cet utilisateur")
+
+    existing_dog.name = dog.name
+    existing_dog.age = dog.age
+    existing_dog.size = dog.size
+    existing_dog.energy_level = dog.energy_level
+    existing_dog.is_shy = dog.is_shy
+
+    session.add(existing_dog)
+    session.commit()
+    session.refresh(existing_dog)
+    return existing_dog

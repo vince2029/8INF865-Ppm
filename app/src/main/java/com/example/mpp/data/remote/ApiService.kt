@@ -8,6 +8,7 @@ import com.example.mpp.data.models.auth.UpdateUserProfileRequest
 import com.example.mpp.data.models.auth.UserProfileModel
 import com.example.mpp.data.models.dog.DogModel
 import com.example.mpp.data.models.dog.NewDogModel
+import com.example.mpp.data.models.dog.UpdateDogModel
 import com.example.mpp.data.models.gamification.GamificationSummaryModel
 import com.example.mpp.data.models.gamification.RewardModel
 import com.example.mpp.data.models.notification.NotificationModel
@@ -80,6 +81,12 @@ interface ApiService {
     suspend fun createNewDog(
         @Path("owner_id") ownerId: String,
         @Body request: NewDogModel
+    ): Response<DogModel>
+
+    @PATCH("dog/{owner_id}")
+    suspend fun updateDog(
+        @Path("owner_id") ownerId: String,
+        @Body request: UpdateDogModel
     ): Response<DogModel>
 
     @GET("notification/list")

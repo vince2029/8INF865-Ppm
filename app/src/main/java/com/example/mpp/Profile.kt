@@ -52,6 +52,7 @@ fun Profile(
     goToLogin: () -> Unit,
     goToNewDog: () -> Unit,
     goToEditProfile: () -> Unit,
+    goToEditDog: () -> Unit,
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var userProfile by remember { mutableStateOf<UserProfileModel?>(null) }
@@ -108,6 +109,21 @@ fun Profile(
 
             if (userDog != null) {
                 DogCard(userDog!!)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = goToEditDog,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Modifier le chien",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Modifier mon chien")
+                }
             } else {
                 Text(
                     text = "Aucun chien enregistré",

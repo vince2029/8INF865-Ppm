@@ -58,6 +58,9 @@ object Profile
 object EditProfile
 
 @Serializable
+object EditDog
+
+@Serializable
 object NewDog
 
 @Serializable
@@ -147,12 +150,19 @@ class MainActivity : ComponentActivity() {
                     Profile(
                         goToLogin = {navController.navigate(Login){ popUpTo(0) { inclusive = true }}},
                         goToNewDog = {navController.navigate(NewDog)},
-                        goToEditProfile = { navController.navigate(EditProfile) }
+                        goToEditProfile = { navController.navigate(EditProfile) },
+                        goToEditDog = { navController.navigate(EditDog) }
                     )
                 }
 
                 composable<EditProfile> {
                     EditProfileScreen(
+                        onClose = { navController.popBackStack() }
+                    )
+                }
+
+                composable<EditDog> {
+                    EditDogScreen(
                         onClose = { navController.popBackStack() }
                     )
                 }
@@ -226,6 +236,7 @@ class MainActivity : ComponentActivity() {
                 Register::class.qualifiedName,
                 NewDog::class.qualifiedName,
                 EditProfile::class.qualifiedName,
+                EditDog::class.qualifiedName,
                 JoinActivity::class.qualifiedName,
                 NewActivity::class.qualifiedName,
                 Rewards::class.qualifiedName,
