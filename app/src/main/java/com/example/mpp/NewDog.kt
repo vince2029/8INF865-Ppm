@@ -40,7 +40,7 @@ enum class Taille { PETIT, MOYEN, GRAND }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewDog(goBack: () -> Unit){
+fun NewDog(goToHome: () -> Unit){
     var nom by remember { mutableStateOf("") }
     var age by remember { mutableStateOf(0) }
     var taille by remember { mutableStateOf(Taille.MOYEN) }
@@ -146,12 +146,6 @@ fun NewDog(goBack: () -> Unit){
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedButton(
-                onClick = goBack,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Annuler")
-            }
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -162,7 +156,7 @@ fun NewDog(goBack: () -> Unit){
                             energyLevel = niveauEnergie,
                             isShy = estTimide
                         )
-                        goBack()
+                        goToHome()
                     }
                 },
                 modifier = Modifier.weight(1f),
@@ -177,5 +171,5 @@ fun NewDog(goBack: () -> Unit){
 @Preview(showBackground = true)
 @Composable
 fun AddDogPreview() {
-    NewDog(goBack = {})
+    NewDog(goToHome = {})
 }

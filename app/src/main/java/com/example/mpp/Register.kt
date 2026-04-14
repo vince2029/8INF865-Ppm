@@ -30,10 +30,10 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun Register(
-    goToHome: () -> Unit,
     goToLogin: () -> Unit,
     registerAPI: suspend (String, String, String) -> Boolean,
-    loginAPI: suspend (String, String) -> Boolean
+    loginAPI: suspend (String, String) -> Boolean,
+    goToNewDog: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -133,7 +133,7 @@ fun Register(
                         if (registered) {
                             // On connecte directement après l'inscription
                             val loggedIn = loginAPI(email, password)
-                            if (loggedIn) goToHome()
+                            if (loggedIn) goToNewDog()
                             else goToLogin()
                         } else {
                             error = "Échec de l'inscription (email déjà utilisé ?)"
@@ -150,7 +150,7 @@ fun Register(
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             } else {
-                Text("S'inscrire")
+                Text("Continuer")
             }
         }
 
@@ -177,8 +177,8 @@ fun Register(
 @Composable
 fun RegisterPreview() {
     Register(
-        goToHome = {},
         goToLogin = {},
+        goToNewDog = {},
         registerAPI = { _, _, _ -> true },
         loginAPI = { _, _ -> true }
     )
