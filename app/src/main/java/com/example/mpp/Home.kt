@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -55,6 +56,7 @@ fun Home(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             FloatingActionButton(onClick = goToNewActivity) {
                 Icon(
@@ -64,22 +66,15 @@ fun Home(
             }
         }
     ) { innerPadding ->
-
         LazyColumn(
             modifier = Modifier
-                .padding(innerPadding)
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(innerPadding),
             verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(bottom = 80.dp) // avoid FAB overlap
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)
         ) {
-
             item {
-                Text(
-                    text = "Activités susceptibles de vous plaire",
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+                Text(text = "Activités susceptibles de vous plaire")
                 Spacer(Modifier.height(16.dp))
             }
 
@@ -117,7 +112,7 @@ fun Home(
                         else
                             activities
                     items(filteredActivities) { activity ->
-                    ActivityListItem(activity = activity) {
+                        ActivityListItem(activity = activity) {
                             goToJoinActivity(activity.activityId)
                         }
                         Spacer(Modifier.height(16.dp))

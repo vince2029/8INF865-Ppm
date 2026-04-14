@@ -70,6 +70,7 @@ fun ActivityList(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { goToNewActivity() }
@@ -86,13 +87,6 @@ fun ActivityList(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Text(
-                text = "Activités",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
-
             SecondaryTabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = Color.Transparent,

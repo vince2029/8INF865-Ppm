@@ -2,8 +2,10 @@ package com.example.mpp
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -74,69 +75,68 @@ fun Notifications(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            if (isLoading && notifications.isEmpty()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.notifications),
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                    }
+        if (isLoading && notifications.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                item { NotificationSectionHeader("Demandes reçues", receivedRequests.size) }
+                items(receivedRequests, key = { it.id }) { notification ->
+                    ReceivedRequestCard(
+                        notification = notification,
+                        onAccept = {
+                            notification.relatedRequestId?.let {
+                                viewModel.decideParticipation(notification.id, it, "ACCEPTED")
+                            }
+                        },
+                        onReject = {
+                            notification.relatedRequestId?.let {
+                                viewModel.decideParticipation(notification.id, it, "REJECTED")
+                            }
+                        }
+                    )
+                }
 
-                    item { NotificationSectionHeader("Demandes reçues", receivedRequests.size) }
-                    items(receivedRequests, key = { it.id }) { notification ->
-                        ReceivedRequestCard(
+                item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
+
+                item { NotificationSectionHeader("Demandes envoyées", sentRequests.size) }
+                items(sentRequests, key = { it.id }) { notification ->
+                    DismissibleNotificationItem(
+                        onDismiss = { viewModel.dismissNotification(notification.id) }
+                    ) {
+                        SentRequestCard(
                             notification = notification,
-                            onAccept = {
+                            onCancel = {
                                 notification.relatedRequestId?.let {
-                                    viewModel.decideParticipation(notification.id, it, "ACCEPTED")
-                                }
-                            },
-                            onReject = {
-                                notification.relatedRequestId?.let {
-                                    viewModel.decideParticipation(notification.id, it, "REJECTED")
+                                    viewModel.cancelParticipationRequest(notification.id, it)
                                 }
                             }
                         )
                     }
+                }
 
-                    item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
+                item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
 
-                    item { NotificationSectionHeader("Demandes envoyées", sentRequests.size) }
-                    items(sentRequests, key = { it.id }) { notification ->
-                        DismissibleNotificationItem(
-                            onDismiss = { viewModel.dismissNotification(notification.id) }
-                        ) {
-                            SentRequestCard(
-                                notification = notification,
-                                onCancel = {
-                                    notification.relatedRequestId?.let {
-                                        viewModel.cancelParticipationRequest(notification.id, it)
-                                    }
-                                }
-                            )
-                        }
-                    }
-
-                    item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
-
-                    item { NotificationSectionHeader("Autre", otherNotifications.size) }
-                    items(otherNotifications, key = { it.id }) { notification ->
-                        DismissibleNotificationItem(
-                            onDismiss = { viewModel.dismissNotification(notification.id) }
-                        ) {
-                            SimpleNotificationCard(notification)
-                        }
+                item { NotificationSectionHeader("Autre", otherNotifications.size) }
+                items(otherNotifications, key = { it.id }) { notification ->
+                    DismissibleNotificationItem(
+                        onDismiss = { viewModel.dismissNotification(notification.id) }
+                    ) {
+                        SimpleNotificationCard(notification)
                     }
                 }
             }

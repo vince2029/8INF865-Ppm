@@ -100,8 +100,10 @@ fun NewActivity(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text("Créer une activité") },
                 navigationIcon = {
                     IconButton(onClick = {

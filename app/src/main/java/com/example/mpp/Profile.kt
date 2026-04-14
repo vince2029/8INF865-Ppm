@@ -46,10 +46,6 @@ fun Profile( goToLogin: () -> Unit, goToNewDog: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = stringResource(R.string.profile))
-
-        Spacer(modifier = Modifier.height(8.dp))
-
         Text("Mon chien", style = MaterialTheme.typography.titleMedium)
 
         Spacer(Modifier.height(12.dp))
