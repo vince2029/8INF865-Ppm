@@ -273,7 +273,7 @@ fun EditDogScreen(onClose: () -> Unit) {
                                 isShy = isShy
                             )
                             if (success) {
-                                message = "Chien mis à jour"
+                                onClose()
                             } else {
                                 message = "Échec de la mise à jour"
                             }
