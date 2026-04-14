@@ -32,6 +32,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -91,15 +92,15 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val navController = rememberNavController()
-            val startDestination = if (SessionManager.hasSession()) Home else Login
+            val startDestination = remember { if (SessionManager.hasSession()) Home else Login }
 
             val navGraph = navController.createGraph(startDestination = startDestination) {
                 composable<Register> {
                     Register(
-                        goToHome = {navController.navigate(Home)},
                         goToLogin = {navController.navigate(Login)},
                         registerAPI = {email, username, password -> API.register(email, username, password)},
-                        loginAPI = {username, password -> API.login(username, password)}
+                        loginAPI = {username, password -> API.login(username, password)},
+                        goToNewDog = {navController.navigate(NewDog)}
                     )
                 }
                 
@@ -131,7 +132,7 @@ class MainActivity : ComponentActivity() {
 
                 composable<NewDog> {
                     NewDog(
-                        goBack = {navController.navigate(Profile)}
+                        goToHome = {navController.navigate(Home)}
                     )
                 }
 
@@ -197,7 +198,7 @@ class MainActivity : ComponentActivity() {
             }
 
             val currentPage = navController.currentBackStackEntryAsState().value?.destination?.route
-            val pagesWithoutBars = listOf(Login::class.qualifiedName, Register::class.qualifiedName)
+            val pagesWithoutBars = listOf(Login::class.qualifiedName, Register::class.qualifiedName, NewDog::class.qualifiedName)
             val pagesWithArrow = listOf(JoinActivity::class.qualifiedName, Register::class.qualifiedName)
 
             val showArrow = pagesWithArrow.any { prefix -> prefix?.let { currentPage?.startsWith(it) == true } == true }
