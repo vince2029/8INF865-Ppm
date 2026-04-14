@@ -26,6 +26,8 @@ import com.example.mpp.data.models.activity.ActivityModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -236,9 +238,28 @@ fun ActivityListItem(activity: ActivityModel, onClick: () -> Unit) {
 }
 
 private fun formatDateTime(dateString: String): String {
-    val date = LocalDateTime.parse(dateString)
     val outputFormatter = DateTimeFormatter.ofPattern("d MMMM 'à' HH'h'mm", Locale.FRENCH)
-    return outputFormatter.format(date)
+
+    val parsedDate = runCatching {
+        ZonedDateTime.parse(dateString)
+            .withZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime() 
+    }
+    .recoverCatching {
+        LocalDateTime.parse(dateString)
+            .atZone(ZoneId.of("UTC"))
+            .withZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
+    }
+    .recoverCatching {
+        LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+            .atZone(ZoneId.of("UTC"))
+            .withZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
+    }
+    .getOrNull()
+
+    return parsedDate?.format(outputFormatter) ?: dateString
 }
 
 @Preview(showBackground = true)
